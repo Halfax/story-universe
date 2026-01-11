@@ -11,7 +11,7 @@ from src.services.clock import start_world_clock
 
 app = FastAPI()
 
-# Start the world clock and tick broadcasting thread
+# Start the world clock and tick broadcasting thread (this is the only place that binds to 5555)
 start_world_clock()
 
 # Dummy world state for demonstration (replace with real DB/state)
@@ -27,7 +27,7 @@ def ping():
 
 
 
-publisher = TickPublisher()
+publisher = TickPublisher(address="tcp://127.0.0.1:5555", bind=False)  # Connect, do not bind
 
 @app.post("/event")
 async def ingest_event(event: dict):

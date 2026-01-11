@@ -15,11 +15,15 @@ Publishes tick and event messages to other nodes (e.g., Evo-X2) via ZeroMQ PUB s
 
 import zmq
 
+
 class TickPublisher:
-	def __init__(self, address="tcp://*:5555"):
+	def __init__(self, address="tcp://*:5555", bind=True):
 		context = zmq.Context()
 		self.socket = context.socket(zmq.PUB)
-		self.socket.bind(address)
+		if bind:
+			self.socket.bind(address)
+		else:
+			self.socket.connect(address)
 
 	def publish_tick(self, tick_data):
 		self.socket.send_json({"type": "system_tick", **tick_data})
