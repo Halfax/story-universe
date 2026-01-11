@@ -1,0 +1,21 @@
+server:
+  host: "0.0.0.0"
+  port: 8001
+
+database:
+  path: "/data/chronicle.db"
+
+messaging:
+  zmq_pub_address: "tcp://*:5555"
+  zmq_sub_address: "tcp://localhost:5555"
+
+world_clock:
+  tick_interval_seconds: 60
+  time_scale: 1.0
+
+canon:
+  strict_mode: true
+  allow_retcon: false
+
+logging:
+  level: "INFO"
