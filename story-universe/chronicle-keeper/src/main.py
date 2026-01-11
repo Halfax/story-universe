@@ -4,9 +4,15 @@ from fastapi import FastAPI, Request
 
 from src.services.continuity import ContinuityValidator
 from src.db.database import get_connection
+
 from src.messaging.publisher import TickPublisher
+from src.services.clock import start_world_clock
+
 
 app = FastAPI()
+
+# Start the world clock and tick broadcasting thread
+start_world_clock()
 
 # Dummy world state for demonstration (replace with real DB/state)
 world_state = {

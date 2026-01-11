@@ -38,8 +38,10 @@ This guide explains how to deploy each component to its target machine.
    ```sh
    docker run -p 8001:8001 chronicle-keeper
    ```
-5. **(Optional) Start world clock and messaging:**
-   - The world clock and messaging are started automatically if integrated in main.py.
+5. **World Clock and Tick Broadcasting:**
+   - The world clock and tick broadcasting start automatically when you run the server (no manual step required).
+   - This is required for distributed event/tick flow to Evo-X2 and other nodes.
+   - If you do not see ticks/events on other machines, ensure the server is running and port 5555 is open.
 
 ---
 
