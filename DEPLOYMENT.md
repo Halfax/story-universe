@@ -26,18 +26,35 @@ This guide explains how to deploy each component to its target machine.
    ```sh
    docker build -t chronicle-keeper .
    ```
-3. **Initialize the database:**
-   ```sh
-   python src/main.py  # First run will create DB tables
-   ```
-4. **Run the server:**
+3. **Database initialization:**
+   - If using Docker, database tables are created automatically during the build—no manual step required.
+   - If running locally (not in Docker), you can initialize the database with:
+     ```sh
+     python src/main.py  # First run will create DB tables
+     ```
+4. **Run or Restart the server:**
    ```sh
    uvicorn src.main:app --host 0.0.0.0 --port 8001
    ```
-   Or, with Docker:
-   ```sh
-   docker run -p 8001:8001 chronicle-keeper
-   ```
+   Or, with Docker (recommended for deployment):
+   - If you need to restart or update the container, use the following steps:
+     1. **Stop and remove any existing container:**
+        ```sh
+        sudo docker stop chronicle-keeper || true
+        sudo docker rm chronicle-keeper || true
+        ```
+     2. **Rebuild the Docker image (after code changes or git pull):**
+        ```sh
+        sudo docker build -t chronicle-keeper .
+        ```
+     3. **Start the container with both API and ZeroMQ ports exposed:**
+        ```sh
+        sudo docker run -d --name chronicle-keeper -p 8001:8001 -p 5555:5555 chronicle-keeper
+        ```
+   - To view logs from the running container:
+     ```sh
+     sudo docker logs -f chronicle-keeper
+     ```
 5. **World Clock and Tick Broadcasting:**
    - The world clock and tick broadcasting start automatically when you run the server (no manual step required).
    - This is required for distributed event/tick flow to Evo-X2 and other nodes.
