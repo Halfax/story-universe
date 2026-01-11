@@ -1,0 +1,21 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+# Ignore Python cache and environment files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+ENV/
+.venv/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore private server info
+servers.md
