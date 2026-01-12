@@ -25,3 +25,13 @@ class MainWindow(QMainWindow):
     def add_event(self, event_str):
         self.event_log.add_event(event_str)
         self.timeline.add_event(event_str)
+
+
+# Launch the application if run as a script or module
+if __name__ == "__main__":
+    from PySide6.QtWidgets import QApplication
+    import sys
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())

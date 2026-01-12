@@ -138,8 +138,10 @@ uvicorn src.main:app --host 0.0.0.0 --port 8001
    ```
 3. **Run the browser:**
    ```sh
-   python src/ui/main_window.py
+   cd src
+   python -m ui.main_window
    ```
+   > **Note:** This is required so that relative imports work correctly. Do not run main_window.py directly.
 
 ---
 
