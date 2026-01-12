@@ -13,12 +13,22 @@ app = FastAPI()
 
 
 
+
 # Start the world clock and tick broadcasting thread using FastAPI startup event
 @app.on_event("startup")
-def start_world_clock_on_startup():
-    print("[ChronicleKeeper] FastAPI startup event: starting world clock thread...")
+def startup_tasks():
+    print("[ChronicleKeeper] FastAPI startup event: starting world clock thread and ensuring test DB tables...")
     from src.services.clock import start_world_clock
     start_world_clock()
+    # Ensure test DB tables exist if running in test mode
+    try:
+        from src.db.test_db_setup import setup_test_db
+        import os
+        db_path = os.environ.get("CHRONICLE_KEEPER_DB_PATH")
+        if db_path:
+            setup_test_db(db_path)
+    except ImportError:
+        pass
 
 # Fallback: If running as a script (not under Uvicorn), start the world clock directly
 if __name__ == "__main__":

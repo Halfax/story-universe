@@ -3,7 +3,10 @@
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent.parent / 'universe.db'
+import os
+DB_PATH = os.environ.get("CHRONICLE_KEEPER_DB_PATH")
+if not DB_PATH:
+    DB_PATH = Path(__file__).parent.parent.parent / 'universe.db'
 
 def get_connection():
     return sqlite3.connect(DB_PATH)
