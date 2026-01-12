@@ -11,8 +11,12 @@ from src.services.clock import start_world_clock
 
 app = FastAPI()
 
-# Start the world clock and tick broadcasting thread (this is the only place that binds to 5555)
-start_world_clock()
+
+# Start the world clock and tick broadcasting thread using FastAPI startup event
+@app.on_event("startup")
+def start_world_clock_on_startup():
+    from src.services.clock import start_world_clock
+    start_world_clock()
 
 # Dummy world state for demonstration (replace with real DB/state)
 world_state = {
