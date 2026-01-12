@@ -1,4 +1,3 @@
-
 #!/bin/sh
 # Entrypoint: start world clock, then launch Uvicorn
 set -e
