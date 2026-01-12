@@ -57,8 +57,9 @@ This guide explains how to deploy each component to its target machine.
      ```
 5. **World Clock and Tick Broadcasting:**
    - The world clock and tick broadcasting start automatically when you run the server (no manual step required).
+   - **ZeroMQ Binding Rule:** Only the world clock thread binds to port 5555 (as a PUB socket). All other event/tick publishers connect to this PUB socket—they do not bind.
    - This is required for distributed event/tick flow to Evo-X2 and other nodes.
-   - If you do not see ticks/events on other machines, ensure the server is running and port 5555 is open.
+   - If you do not see ticks/events on other machines, ensure the server is running and port 5555 is open, and that only one process binds to 5555.
 
 ---
 
