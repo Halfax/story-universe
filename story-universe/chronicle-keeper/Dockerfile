@@ -9,4 +9,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 RUN python src/db/init_db.py
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8001"]
+COPY start_with_clock.sh /app/start_with_clock.sh
+RUN chmod +x /app/start_with_clock.sh
+ENTRYPOINT ["/app/start_with_clock.sh"]
