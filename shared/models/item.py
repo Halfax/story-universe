@@ -54,6 +54,55 @@ class Item:
         d["tags"] = json.dumps(self.tags)
         return d
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Item":
+        # Expect effects/tags possibly stored as JSON strings
+        effects = data.get("effects")
+        if isinstance(effects, str):
+            try:
+                effects = json.loads(effects)
+            except Exception:
+                effects = {}
+        tags = data.get("tags")
+        if isinstance(tags, str):
+            try:
+                tags = json.loads(tags)
+            except Exception:
+                tags = []
+        equip_slot = data.get("equip_slot")
+        if equip_slot:
+            try:
+                equip_slot = EquipSlot(equip_slot)
+            except Exception:
+                equip_slot = None
+        category = data.get("category")
+        if category:
+            try:
+                category = ItemCategory(category)
+            except Exception:
+                category = ItemCategory.MISC
+        return cls(
+            id=data.get("id"),
+            sku=data.get("sku", ""),
+            name=data.get("name", ""),
+            description=data.get("description", ""),
+            category=category,
+            sub_type=data.get("sub_type"),
+            weight=float(data.get("weight", 0.0) or 0.0),
+            stackable=bool(data.get("stackable", False)),
+            max_stack=int(data.get("max_stack", 1) or 1),
+            equippable=bool(data.get("equippable", False)),
+            equip_slot=equip_slot,
+            damage_min=data.get("damage_min"),
+            damage_max=data.get("damage_max"),
+            armor_rating=data.get("armor_rating"),
+            durability_max=data.get("durability_max"),
+            consumable=bool(data.get("consumable", False)),
+            charges_max=data.get("charges_max"),
+            effects=effects or {},
+            tags=tags or [],
+        )
+
 
 @dataclass
 class InventoryItem:
@@ -74,6 +123,33 @@ class InventoryItem:
             d["equip_slot"] = self.equip_slot.value
         d["metadata"] = json.dumps(self.metadata)
         return d
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "InventoryItem":
+        metadata = data.get("metadata")
+        if isinstance(metadata, str):
+            try:
+                metadata = json.loads(metadata)
+            except Exception:
+                metadata = {}
+        equip_slot = data.get("equip_slot")
+        if equip_slot:
+            try:
+                equip_slot = EquipSlot(equip_slot)
+            except Exception:
+                equip_slot = None
+        return cls(
+            id=data.get("id"),
+            owner_type=data.get("owner_type", ""),
+            owner_id=str(data.get("owner_id", "")),
+            item_id=int(data.get("item_id")),
+            quantity=int(data.get("quantity", 1) or 1),
+            durability=data.get("durability"),
+            charges_remaining=data.get("charges_remaining"),
+            equipped=bool(data.get("equipped", False)),
+            equip_slot=equip_slot,
+            metadata=metadata or {},
+        )
 
 
 # Basic item behaviors

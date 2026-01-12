@@ -42,3 +42,10 @@ sudo story-universe/chronicle-keeper/scripts/install_cron.sh
 - **What it does:** The helper will start the container with `docker run -d --name chronicle-keeper --restart unless-stopped -p 8001:8001 chronicle-keeper` if the container doesn't already exist or run, and the cron entry ensures the helper runs at every reboot.
 
 If you prefer a `systemd` service instead of `cron.d`, say so and I will add a unit file.
+
+## Agent Tracker Sync
+
+- The assistant (agent) will maintain an internal task tracker and keep it synchronized with the repository `TODO.md` file.
+- When the agent marks a task completed or updates status, it will immediately patch `TODO.md` with an "Agent Tracker Snapshot" section so the repo reflects the same state.
+- If you want the agent to stop updating the `TODO.md` snapshot, tell the agent and it will only keep its internal tracker.
+- The authoritative master TODO remains `TODO.md`; the agent will also keep a backup snapshot on request.

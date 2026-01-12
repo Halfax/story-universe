@@ -3,13 +3,13 @@
 # This module provides an interactive map visualization for displaying
 # locations and their connections in the story universe.
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar, QAction, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar,
                               QLabel, QComboBox, QSizePolicy, QMenu)
 from PySide6.QtCore import Qt, QSize, Signal, QPointF
 from PySide6.QtGui import QAction, QIcon, QPainter, QPen, QColor
 
 # Import visualization components
-from ....visualization.map_renderer import MapView, MapRenderer
+from visualization.map_renderer import MapView, MapRenderer
 
 class MapViewPanel(QWidget):
     """Interactive panel for visualizing locations and their connections on a map."""

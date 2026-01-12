@@ -1,6 +1,6 @@
 
 # FastAPI app entry for Chronicle Keeper (Raspberry Pi 5)
-from fastapi import FastAPI, Request, HTTPException, status, Depends
+from fastapi import FastAPI, Request, HTTPException, status, Depends, BackgroundTasks
 from typing import Optional
 import os
 
@@ -9,6 +9,7 @@ from src.db.database import get_connection
 from src.db.queries import get_world_state as assemble_world_state
 from src.services.inventory import list_inventory, pickup_item, use_inventory_item, equip_inventory_item
 from src.services.event_consumer import handle_event as handle_event_consumer
+from src.services import event_handlers
 import time
 
 from src.messaging.publisher import TickPublisher
@@ -94,7 +95,7 @@ def ping():
 publisher = TickPublisher(address=ZMQ_PUB_CLIENT_ADDR, bind=False)  # Connect, do not bind (address from config)
 
 @app.post("/event")
-async def ingest_event(event: dict, api_key: str = require_api_key()):
+async def ingest_event(event: dict, background: BackgroundTasks, api_key: str = require_api_key()):
     # Accept raw dict for backward compatibility; ensure minimal fields and coerce to CanonicalEvent.
     # Auto-generate an `id` if missing to preserve previous behavior where clients didn't provide one.
     if 'id' not in event or not event.get('id'):
@@ -114,7 +115,7 @@ async def ingest_event(event: dict, api_key: str = require_api_key()):
         # Maintain backwards-compatible behavior for clients/tests: return 200 with rejected payload
         return {"status": "rejected", "reason": reason}
 
-    # Store event in DB
+    # Store event in DB and apply consequences using the validator (commits handled inside)
     conn = get_connection()
     c = conn.cursor()
     c.execute("""
@@ -128,8 +129,21 @@ async def ingest_event(event: dict, api_key: str = require_api_key()):
         str(evd.get("involved_locations", []) or []),
         str(evd.get("metadata", {}))
     ))
-    conn.commit()
-    conn.close()
+    # Let the validator apply any DB-side consequences using the same connection for consistency
+    try:
+        validator.apply_event_consequences(evd, db_conn=conn)
+    except Exception:
+        # Non-fatal: log and continue
+        import traceback
+        traceback.print_exc()
+    try:
+        conn.commit()
+    except Exception:
+        pass
+    try:
+        conn.close()
+    except Exception:
+        pass
 
     # Broadcast event to other nodes using canonical model dict
     try:
@@ -137,6 +151,12 @@ async def ingest_event(event: dict, api_key: str = require_api_key()):
     except Exception:
         # Non-fatal: log and continue
         print("[ChronicleKeeper] Warning: failed to publish event")
+
+    # Schedule the event consumer to run in background (applies runtime side-effects)
+    try:
+        background.add_task(event_handlers.dispatch_event, evd, get_connection)
+    except Exception:
+        pass
 
     return {"status": "accepted", "id": evd.get("id")}
 
@@ -283,6 +303,137 @@ def delete_faction(fid: int, admin: bool = Depends(require_admin)):
     return {'status': 'deleted', 'id': fid}
 
 
+@app.get('/world/factions/{fid}/metrics')
+def get_faction_metrics(fid: int):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT trust, power, resources, influence FROM faction_metrics WHERE faction_id = ?', (fid,))
+    row = c.fetchone()
+    conn.close()
+    if not row:
+        return {'faction_id': fid, 'trust': 0.5, 'power': 0, 'resources': 0, 'influence': 0}
+    return {'faction_id': fid, 'trust': float(row[0] or 0.5), 'power': int(row[1] or 0), 'resources': int(row[2] or 0), 'influence': int(row[3] or 0)}
+
+
+@app.put('/world/factions/{fid}/metrics')
+def update_faction_metrics(fid: int, payload: dict, admin: bool = Depends(require_admin)):
+    # Accept partial updates and upsert into faction_metrics
+    trust = payload.get('trust')
+    power = payload.get('power')
+    resources = payload.get('resources')
+    influence = payload.get('influence')
+
+    conn = get_connection()
+    c = conn.cursor()
+    # Ensure a metrics row exists (INSERT OR REPLACE pattern)
+    # Read existing
+    c.execute('SELECT faction_id FROM faction_metrics WHERE faction_id = ?', (fid,))
+    exists = bool(c.fetchone())
+    if not exists:
+        c.execute('INSERT INTO faction_metrics (faction_id, trust, power, resources, influence) VALUES (?, ?, ?, ?, ?)', (fid, float(trust or 0.5), int(power or 0), int(resources or 0), int(influence or 0)))
+    else:
+        # Build update parts
+        updates = []
+        params = []
+        if trust is not None:
+            updates.append('trust = ?')
+            params.append(float(trust))
+        if power is not None:
+            updates.append('power = ?')
+            params.append(int(power))
+        if resources is not None:
+            updates.append('resources = ?')
+            params.append(int(resources))
+        if influence is not None:
+            updates.append('influence = ?')
+            params.append(int(influence))
+        if updates:
+            params.append(fid)
+            c.execute('UPDATE faction_metrics SET ' + ', '.join(updates) + ' WHERE faction_id = ?', params)
+    conn.commit()
+    conn.close()
+    return {'status': 'updated', 'id': fid}
+
+
+@app.get('/world/factions/{fid}/relationships')
+def list_faction_relationships(fid: int):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id, target_faction_id, relationship_type, strength, last_updated, cooldown_until, metadata FROM faction_relationships WHERE source_faction_id = ?', (fid,))
+    rows = [dict(zip([col[0] for col in c.description], row)) for row in c.fetchall()]
+    conn.close()
+    return rows
+
+
+@app.put('/world/factions/{fid}/relationships/{target_id}')
+def upsert_faction_relationship(fid: int, target_id: int, payload: dict, admin: bool = Depends(require_admin)):
+    rel_type = payload.get('relationship_type')
+    strength = payload.get('strength')
+    cooldown_until = payload.get('cooldown_until')
+    metadata = str(payload.get('metadata', {}))
+    if not rel_type:
+        raise HTTPException(status_code=400, detail='relationship_type required')
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id FROM faction_relationships WHERE source_faction_id = ? AND target_faction_id = ?', (fid, target_id))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO faction_relationships (source_faction_id, target_faction_id, relationship_type, strength, last_updated, cooldown_until, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)', (fid, target_id, rel_type, float(strength or 0.0), int(payload.get('last_updated') or 0), int(cooldown_until or 0), metadata))
+        rid = c.lastrowid
+    else:
+        rid = row[0]
+        updates = []
+        params = []
+        updates.append('relationship_type = ?')
+        params.append(rel_type)
+        if strength is not None:
+            updates.append('strength = ?')
+            params.append(float(strength))
+        if cooldown_until is not None:
+            updates.append('cooldown_until = ?')
+            params.append(int(cooldown_until))
+        updates.append('last_updated = ?')
+        params.append(int(payload.get('last_updated') or 0))
+        updates.append('metadata = ?')
+        params.append(metadata)
+        params.append(rid)
+        c.execute('UPDATE faction_relationships SET ' + ', '.join(updates) + ' WHERE id = ?', params)
+    conn.commit()
+    conn.close()
+    return {'status': 'ok', 'relationship_id': rid}
+
+
+@app.get('/world/factions/{fid}/cooldowns')
+def list_faction_cooldowns(fid: int):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id, cooldown_key, until_ts, metadata FROM faction_cooldowns WHERE faction_id = ?', (fid,))
+    rows = [dict(zip([col[0] for col in c.description], row)) for row in c.fetchall()]
+    conn.close()
+    return rows
+
+
+@app.put('/world/factions/{fid}/cooldowns/{key}')
+def set_faction_cooldown(fid: int, key: str, payload: dict, admin: bool = Depends(require_admin)):
+    until_ts = payload.get('until_ts')
+    if until_ts is None:
+        raise HTTPException(status_code=400, detail='until_ts required')
+    metadata = str(payload.get('metadata', {}))
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT id FROM faction_cooldowns WHERE faction_id = ? AND cooldown_key = ?', (fid, key))
+    row = c.fetchone()
+    if not row:
+        c.execute('INSERT INTO faction_cooldowns (faction_id, cooldown_key, until_ts, metadata) VALUES (?, ?, ?, ?)', (fid, key, int(until_ts), metadata))
+        cid = c.lastrowid
+    else:
+        cid = row[0]
+        c.execute('UPDATE faction_cooldowns SET until_ts = ?, metadata = ? WHERE id = ?', (int(until_ts), metadata, cid))
+    conn.commit()
+    conn.close()
+    return {'status': 'ok', 'cooldown_id': cid}
+
+
 from src.db.database import get_connection
 
 @app.get("/world/state")
@@ -292,6 +443,48 @@ def get_world_state():
         state = assemble_world_state(conn)
     finally:
         conn.close()
+    # Augment state with faction_metrics and explicit relationships/cooldowns when available
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        # faction metrics
+        try:
+            c.execute('SELECT faction_id, trust, power, resources, influence FROM faction_metrics')
+            for r in c.fetchall():
+                fid = str(r[0])
+                if 'factions' not in state:
+                    state['factions'] = {}
+                state['factions'].setdefault(fid, {})
+                state['factions'][fid].setdefault('metrics', {})
+                state['factions'][fid]['metrics'] = {'trust': float(r[1]) if r[1] is not None else 0.5, 'power': int(r[2] or 0), 'resources': int(r[3] or 0), 'influence': int(r[4] or 0)}
+        except Exception:
+            pass
+        # outgoing relationships
+        try:
+            c.execute('SELECT source_faction_id, target_faction_id, relationship_type, strength, cooldown_until FROM faction_relationships')
+            for r in c.fetchall():
+                src = str(r[0])
+                tgt = str(r[1])
+                rel = {'relationship_type': r[2], 'strength': float(r[3] or 0.0), 'cooldown_until': int(r[4] or 0)}
+                state['factions'].setdefault(src, {})
+                state['factions'][src].setdefault('outgoing_relationships', {})
+                state['factions'][src]['outgoing_relationships'][tgt] = rel
+        except Exception:
+            pass
+        # faction cooldowns
+        try:
+            c.execute('SELECT faction_id, cooldown_key, until_ts, metadata FROM faction_cooldowns')
+            for r in c.fetchall():
+                fid = str(r[0])
+                state['factions'].setdefault(fid, {})
+                state['factions'][fid].setdefault('cooldowns', {})
+                state['factions'][fid]['cooldowns'][r[1]] = int(r[2])
+        except Exception:
+            pass
+        conn.close()
+    except Exception:
+        pass
+
     return state
 
 @app.get("/world/characters")

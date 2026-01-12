@@ -3,13 +3,13 @@
 # This module provides an interactive visualization of character relationships
 # using a force-directed graph layout with PySide6 and NetworkX.
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar, QAction, 
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar,
                               QLabel, QComboBox, QSizePolicy, QMenu, QGraphicsView)
 from PySide6.QtCore import Qt, QSize, Signal, QPointF
 from PySide6.QtGui import QAction, QIcon, QPainter, QPen, QColor
 
 # Import visualization components
-from ....visualization.graph_renderer import RelationshipGraph, GraphRenderer
+from visualization.graph_renderer import RelationshipGraph, GraphRenderer
 
 class CharacterWebPanel(QWidget):
     """Interactive panel for visualizing character relationships as a force-directed graph."""

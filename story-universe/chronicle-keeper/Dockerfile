@@ -12,6 +12,9 @@ COPY . .
 # initialize DB
 RUN python src/db/init_db.py || true
 
+# Ensure import scripts are executable so startup helper can run them
+RUN chmod +x scripts/import_factions.py scripts/import_items.py scripts/ensure_imports.py || true
+
 COPY start_with_clock.sh /app/start_with_clock.sh
 RUN chmod +x /app/start_with_clock.sh
 

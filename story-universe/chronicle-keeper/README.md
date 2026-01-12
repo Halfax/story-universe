@@ -36,6 +36,19 @@ Environment variables:
 - `ZMQ_PUB_BIND_ADDR`: ZeroMQ publisher bind address (default: `tcp://*:5555`)
 - `TICK_PUBLISHER_RECONNECT_DELAY`: Delay between reconnection attempts in seconds (default: `5.0`)
 
+## Automatic Data Import on Startup
+
+The container can automatically import initial data (factions and items) into the SQLite database when it starts:
+
+- At container startup the entrypoint runs `scripts/ensure_imports.py`. That helper will:
+  - run `scripts/import_factions.py --csv /app/data/faction_names.csv --commit` when the `factions` table is empty (or when `CHRONICLE_AUTO_IMPORT=1`), and
+  - run `scripts/import_items.py --csv /app/data/items.csv --commit` when the `items` table is empty (or when `CHRONICLE_AUTO_IMPORT=1`).
+
+- To force imports on every startup set the environment variable `CHRONICLE_AUTO_IMPORT=1`.
+- By default the helper is conservative: it only imports when the relevant table is empty. This avoids overwriting or duplicating data on restarts.
+
+CSV files must be present in `/app/data` inside the container. If you mount a host directory as `/data`, make sure to copy CSVs there or set `CHRONICLE_ITEMS_CSV` and `CHRONICLE_FACTION_CSV` environment variables to the correct paths.
+
 ## API Endpoints
 
 - `GET /ping`: Health check endpoint

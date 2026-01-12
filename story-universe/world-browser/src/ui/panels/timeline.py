@@ -3,13 +3,13 @@
 # This module provides an interactive timeline visualization for displaying
 # and navigating chronological events in the story universe.
 
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar, QAction,
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QToolBar,
                               QLabel, QSizePolicy)
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QAction, QIcon
 
 # Import visualization components
-from ....visualization.timeline_renderer import TimelineView, TimelineRenderer
+from visualization.timeline_renderer import TimelineView, TimelineRenderer
 
 class TimelinePanel(QWidget):
     """Interactive timeline panel for visualizing chronological events."""
