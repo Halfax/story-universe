@@ -12,9 +12,17 @@ from src.services.clock import start_world_clock
 app = FastAPI()
 
 
+
 # Start the world clock and tick broadcasting thread using FastAPI startup event
 @app.on_event("startup")
 def start_world_clock_on_startup():
+    print("[ChronicleKeeper] FastAPI startup event: starting world clock thread...")
+    from src.services.clock import start_world_clock
+    start_world_clock()
+
+# Fallback: If running as a script (not under Uvicorn), start the world clock directly
+if __name__ == "__main__":
+    print("[ChronicleKeeper] __main__ entry: starting world clock thread...")
     from src.services.clock import start_world_clock
     start_world_clock()
 
