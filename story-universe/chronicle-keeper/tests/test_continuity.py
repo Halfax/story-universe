@@ -1,3 +1,24 @@
+from src.services.continuity import ContinuityValidator
+
+
+def test_continuity_dead_cannot_act():
+    # provided world state with a dead character
+    ws = {"characters": {"1": {"name": "Bob", "status": "dead"}}, "locations": {}, "factions": {}, "recent_events": []}
+    v = ContinuityValidator(world_state=ws)
+    event = {"type": "character_action", "character_id": "1", "action": "attack", "timestamp": 100}
+    ok, reason = v.validate_event(event)
+    assert not ok
+    assert "dead" in reason.lower()
+
+
+def test_continuity_identity_conflict():
+    ws = {"characters": {"1": {"name": "Alice", "status": "alive"}}, "locations": {}, "factions": {}, "recent_events": []}
+    v = ContinuityValidator(world_state=ws)
+    # trying to create another character with same name
+    event = {"type": "character_create", "name": "Alice", "character_id": "2"}
+    ok, reason = v.validate_event(event)
+    assert not ok
+    assert "identity" in reason.lower()
 def test_relationship_to_self():
     # Both source and target must be alive for the self-relationship constraint to trigger
     world = make_world_state()

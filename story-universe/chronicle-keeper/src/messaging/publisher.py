@@ -13,6 +13,8 @@ from enum import Enum
 from typing import Dict, Optional, Any, Callable
 from datetime import datetime
 from threading import Lock
+import threading
+import queue
 from src.config import ZMQ_PUB_CLIENT_ADDR, ZMQ_PUB_BIND_ADDR, TICK_PUBLISHER_RECONNECT_DELAY
 
 logger = logging.getLogger(__name__)
@@ -70,6 +72,13 @@ class ZmqPub:
         self._shutdown = False
         self._reconnect_delay = TICK_PUBLISHER_RECONNECT_DELAY
         self._last_reconnect_attempt = 0.0
+        # queueing/backpressure
+        self._max_queue_size = 1000
+        self._send_queue: "queue.Queue" = queue.Queue(maxsize=self._max_queue_size)
+        self._sender_thread: Optional[threading.Thread] = None
+        self._sender_shutdown = threading.Event()
+        self._start_sender()
+        # attempt connect after sender started
         self._connect()
         
     def _connect(self) -> bool:
@@ -179,7 +188,7 @@ class ZmqPub:
                 logger.warning("Error closing socket after error: %s", e)
     
     def publish(self, topic: str, payload: dict, max_retries: int = 2) -> bool:
-        """Publish a JSON payload under `topic` with retry logic.
+        """Publish a JSON payload under `topic` using a bounded send queue.
         
         Args:
             topic: The topic to publish to
@@ -192,20 +201,26 @@ class ZmqPub:
         if self._shutdown:
             logger.warning("Publisher is shutting down, message not sent")
             return False
-            
-        for attempt in range(max_retries + 1):
-            if self._publish_impl(topic, payload):
-                return True
-                
-            if attempt < max_retries:
-                logger.info("Retry %s/%s for topic %s", 
-                          attempt + 1, max_retries, topic)
-                time.sleep(min(0.1 * (2 ** attempt), 5))  # Exponential backoff
-                
-        return False
+
+        try:
+            # Non-blocking enqueue to avoid blocking producers under load.
+            self._send_queue.put_nowait((topic, payload))
+            return True
+        except queue.Full:
+            # Queue full -> count as an error/drop. Caller can retry if desired.
+            self.metrics.message_errors += 1
+            self.metrics.last_error = "send_queue_full"
+            self.metrics.last_error_time = time.time()
+            logger.warning("Send queue full, dropping message for topic %s", topic)
+            return False
 
     def close(self):
         """Gracefully shut down the publisher."""
+        # signal sender thread to stop
+        self._sender_shutdown.set()
+        if self._sender_thread and self._sender_thread.is_alive():
+            self._sender_thread.join(timeout=2.0)
+
         with self._lock:
             self._shutdown = True
             try:
@@ -221,6 +236,55 @@ class ZmqPub:
             finally:
                 self._socket = None
                 self._context = None
+
+    def _start_sender(self):
+        """Start background sender thread which drains the send queue."""
+        def loop():
+            while not self._sender_shutdown.is_set():
+                try:
+                    topic, payload = self._send_queue.get(timeout=0.5)
+                except queue.Empty:
+                    continue
+                try:
+                    # attempt a best-effort send using existing impl
+                    # if socket not connected, _publish_impl will attempt reconnect
+                    # but protect with lock to avoid races.
+                    with self._lock:
+                        if self._state != ConnectionState.CONNECTED:
+                            # attempt reconnect if allowed
+                            if self._should_reconnect():
+                                self._connect()
+                        # if still not connected, re-enqueue or drop based on queue size
+                        sent = False
+                        try:
+                            # directly send via socket to minimize overhead
+                            if self._socket and self._state == ConnectionState.CONNECTED:
+                                topic_frame = (self.topic_prefix + topic).encode("utf-8")
+                                json_frame = json.dumps(payload).encode("utf-8")
+                                self._socket.send_multipart([topic_frame, json_frame])
+                                self.metrics.messages_sent += 1
+                                self.metrics.last_success_time = time.time()
+                                sent = True
+                        except Exception as e:
+                            # fallback to _publish_impl to trigger reconnection handling
+                            try:
+                                sent = self._publish_impl(topic, payload)
+                            except Exception:
+                                sent = False
+
+                        if not sent:
+                            # if we couldn't send, increment error and drop
+                            self.metrics.message_errors += 1
+                            self.metrics.last_error = "send_failed"
+                            self.metrics.last_error_time = time.time()
+                finally:
+                    try:
+                        self._send_queue.task_done()
+                    except Exception:
+                        pass
+
+        self._sender_thread = threading.Thread(target=loop, daemon=True)
+        self._sender_thread.start()
 
 
 class LogPublisher(ZmqPub):

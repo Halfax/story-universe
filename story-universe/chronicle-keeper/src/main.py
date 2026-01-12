@@ -14,6 +14,9 @@ import time
 from src.messaging.publisher import TickPublisher
 from src.config import ZMQ_PUB_CLIENT_ADDR
 from src.services.clock import start_world_clock
+from src.models.canonical_event import CanonicalEvent
+from pydantic import ValidationError
+import random
 
 # Simple API key auth and rate limiting (in-memory)
 API_KEY = os.environ.get("CHRONICLE_API_KEY")
@@ -92,10 +95,25 @@ publisher = TickPublisher(address=ZMQ_PUB_CLIENT_ADDR, bind=False)  # Connect, d
 
 @app.post("/event")
 async def ingest_event(event: dict, api_key: str = require_api_key()):
-    is_valid, reason = validator.validate_event(event)
+    # Accept raw dict for backward compatibility; ensure minimal fields and coerce to CanonicalEvent.
+    # Auto-generate an `id` if missing to preserve previous behavior where clients didn't provide one.
+    if 'id' not in event or not event.get('id'):
+        event['id'] = f"evt_{int(time.time())}_{random.randint(0,9999)}"
+
+    try:
+        parsed = CanonicalEvent.model_validate(event) if hasattr(CanonicalEvent, 'model_validate') else CanonicalEvent(**event)
+        evd = parsed.dict() if hasattr(parsed, 'dict') else parsed.model_dump()
+    except ValidationError as ve:
+        # Return 200 with rejected payload to preserve legacy behavior
+        return {"status": "rejected", "reason": f"schema validation failed: {ve}"}
+    except Exception:
+        # Fallback: treat as rejected but include minimal reason
+        return {"status": "rejected", "reason": "schema validation failed"}
+    is_valid, reason = validator.validate_event(evd)
     if not is_valid:
         # Maintain backwards-compatible behavior for clients/tests: return 200 with rejected payload
         return {"status": "rejected", "reason": reason}
+
     # Store event in DB
     conn = get_connection()
     c = conn.cursor()
@@ -103,22 +121,24 @@ async def ingest_event(event: dict, api_key: str = require_api_key()):
         INSERT INTO events (timestamp, type, description, involved_characters, involved_locations, metadata)
         VALUES (?, ?, ?, ?, ?, ?)
     """, (
-        event.get("timestamp"),
-        event.get("type"),
-        event.get("description"),
-        str(event.get("involved_characters", [])),
-        str(event.get("involved_locations", [])),
-        str(event.get("metadata", {}))
+        evd.get("timestamp"),
+        evd.get("type"),
+        evd.get("description") or str(evd.get("data", {})),
+        str(evd.get("involved_characters", []) or []),
+        str(evd.get("involved_locations", []) or []),
+        str(evd.get("metadata", {}))
     ))
     conn.commit()
     conn.close()
-    # Broadcast event to other nodes
+
+    # Broadcast event to other nodes using canonical model dict
     try:
-        publisher.publish_event(event)
+        publisher.publish_event(evd)
     except Exception:
         # Non-fatal: log and continue
         print("[ChronicleKeeper] Warning: failed to publish event")
-    return {"status": "accepted", "id": event.get("id")}
+
+    return {"status": "accepted", "id": evd.get("id")}
 
 # ------------------------
 # CRUD endpoints (characters, locations, factions)

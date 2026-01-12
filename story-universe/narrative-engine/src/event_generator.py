@@ -73,6 +73,8 @@ class NarrativeEngine:
         self.last_event: Optional[Dict[str, Any]] = self.state.get("last_event")
         # per-character goals: {char_id: {goal, progress, assigned_at}}
         self.char_goals: Dict[str, Dict[str, Any]] = self.state.get("char_goals", {})
+        # per-character cooldowns to avoid reusing same characters each tick
+        self.char_cooldowns: Dict[str, float] = self.state.get("char_cooldowns", {})
         # CharacterManager for richer character queries if available
         if CharacterManager:
             try:
@@ -175,6 +177,13 @@ class NarrativeEngine:
     def _set_cooldown(self, event_type: str, seconds: int = 30) -> None:
         self.cooldowns[event_type] = time.time() + seconds
 
+    def _set_char_cooldown(self, char_id: str, seconds: int = 60) -> None:
+        self.char_cooldowns[str(char_id)] = time.time() + seconds
+
+    def _allowed_character(self, char_id: str) -> bool:
+        next_allowed = self.char_cooldowns.get(str(char_id), 0)
+        return time.time() >= next_allowed
+
     def _choose_event_type(self, world_state: Dict[str, Any]) -> str:
         """Choose an event type weighted by simple narrative need.
 
@@ -196,6 +205,16 @@ class NarrativeEngine:
             ("movement", 5),
             ("relationship", 4),
         ]
+
+        # bias toward advancing active arcs: if there are arcs in-progress, boost their types
+        arc_boosts: Dict[str, int] = {}
+        for a in self.arcs:
+            atype = a.get("arc")
+            # older arcs (higher progress) should be more likely to get resolved
+            prog = a.get("progress", 0)
+            arc_boosts[atype] = arc_boosts.get(atype, 0) + max(1, 3 - prog)
+        if arc_boosts:
+            pool = [(t, w + arc_boosts.get(t, 0)) for (t, w) in pool]
 
         # if planner suggests an arc, bias toward that arc type
         if self.planner:
@@ -229,12 +248,21 @@ class NarrativeEngine:
     def _select_characters_for_event(self, characters: List[Dict[str, Any]], n: int = 1) -> List[str]:
         if not characters:
             return []
+        # filter out dead characters or invalid entries
+        characters = [c for c in characters if c and str(c.get('status','')).lower() != 'dead']
+        if not characters:
+            return []
         n = min(n, len(characters))
         # Prefer characters with goals that match a likely event type
         # Build a flat list of ids
         ids = [c.get("id") or c.get("character_id") or c.get("name") for c in characters]
         # ensure goals exist for characters
         self._ensure_goals_for_characters(characters)
+
+        # filter out characters currently on cooldown
+        characters = [c for c in characters if self._allowed_character(c.get('id') or c.get('character_id') or c.get('name'))]
+        if not characters:
+            return []
 
         # score characters by how active their goal is (lower progress preferred)
         scored = []
@@ -245,6 +273,14 @@ class NarrativeEngine:
             if g:
                 # prefer characters with lower progress (more to do)
                 score = max(0.1, 1.0 - (g.get("progress", 0) * 0.2))
+            # small boost if character's goal matches likely event types inferred from world
+            # e.g., if goal maps to 'explore' and tension is low, favor them
+            goal = g.get("goal") if g else None
+            if goal:
+                if goal in ("explore", "undertake_quest", "discover_mystery"):
+                    score *= 1.15
+                if goal in ("seek_revenge", "gain_power"):
+                    score *= 1.1
             scored.append((cid, score))
 
         # weighted sample by score
@@ -255,6 +291,10 @@ class NarrativeEngine:
             weights = [s / total for _, s in scored]
             choices = [cid for cid, _ in scored]
             sampled_ids = random.choices(choices, weights=weights, k=n)
+
+        # set per-character cooldown to avoid immediate reuse
+        for cid in set(sampled_ids):
+            self._set_char_cooldown(cid, seconds=30 + random.randint(0,30))
 
         return sampled_ids
 
@@ -320,7 +360,7 @@ class NarrativeEngine:
     # Arc management
     # ----------------------
     def _start_new_arc(self, arc_type: str, characters: List[str]) -> Dict[str, Any]:
-        arc = {"id": f"arc_{int(time.time())}_{random.randint(0,9999)}", "arc": arc_type, "characters": characters, "progress": 0}
+        arc = {"id": f"arc_{int(time.time())}_{random.randint(0,9999)}", "arc": arc_type, "characters": characters, "progress": 0, "created_at": int(time.time())}
         self.arcs.append(arc)
         return arc
 
@@ -328,7 +368,7 @@ class NarrativeEngine:
         for arc in self.arcs:
             arc["progress"] += 1
         # prune finished arcs (example threshold)
-        self.arcs = [a for a in self.arcs if a["progress"] < 5]
+        self.arcs = [a for a in self.arcs if a.get("progress", 0) < 5]
 
     # ----------------------
     # Cause & Effect: simple follow-ups
@@ -358,6 +398,26 @@ class NarrativeEngine:
         characters = self.fetch_characters()
         locations = self.fetch_locations()
         factions = self.fetch_factions()
+
+        # Planner-first: if planner suggests a concrete event, prefer it (if not cooled down)
+        if self.planner:
+            try:
+                plan = self.planner.generate_plan()
+                if plan and isinstance(plan, dict) and plan.get('event'):
+                    suggested = plan.get('event')
+                    etype = suggested.get('type')
+                    if etype and self._allowed_by_cooldown(etype):
+                        # adopt planner event
+                        suggested['id'] = f"evt_{int(time.time())}_{random.randint(0,9999)}"
+                        suggested['timestamp'] = int(time.time())
+                        self._set_cooldown(etype, seconds=30)
+                        self.last_event = suggested
+                        # persist state
+                        self.state.update({"cooldowns": self.cooldowns, "arcs": self.arcs, "last_event": self.last_event})
+                        save_state(self.state)
+                        return suggested
+            except Exception:
+                pass
 
         # try a cause-effect followup first
         follow = self._maybe_create_followup(self.last_event)

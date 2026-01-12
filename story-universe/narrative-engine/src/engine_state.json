@@ -1,20 +1,32 @@
 {
   "cooldowns": {
-    "relationship": 1768219126.231135,
-    "explore": 1768232353.1253662,
-    "mystery": 1768219105.2421355,
-    "alliance": 1768219128.2431414
+    "relationship": 1768237100.2626936,
+    "explore": 1768237311.2824395,
+    "mystery": 1768237301.2814362,
+    "alliance": 1768237292.2824395,
+    "conflict": 1768237085.5035155,
+    "movement": 1768237301.2608654
   },
-  "arcs": [],
+  "arcs": [
+    {
+      "id": "arc_1768237007_760",
+      "arc": "explore",
+      "characters": [
+        "c1"
+      ],
+      "progress": 4
+    }
+  ],
   "last_event": {
-    "type": "explore",
+    "type": "alliance",
     "involved_characters": [],
     "involved_locations": [],
     "involved_factions": [
-      "ThGonGon"
+      "ShiTarIon",
+      "Silver Lotus Quantum"
     ],
-    "description": "explore involving ; factions: ThGonGon",
-    "id": "evt_1768232302_9131",
-    "timestamp": 1768232302
+    "description": "alliance involving ; factions: ShiTarIon, Silver Lotus Quantum",
+    "id": "evt_1768237256_5215",
+    "timestamp": 1768237256
   }
 }

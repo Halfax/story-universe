@@ -34,9 +34,10 @@ This document tracks the implementation status and details of core features in t
   - Basic structure defined
   - Needs: Implementation of validation rules
 
-- [ ] **Narrative Engine Redesign**
-  - Initial planning complete
-  - Needs: Implementation of new architecture
+- [ ] **Narrative Engine Redesign** (In progress)
+  - Skeleton implemented and iterated
+  - Recent additions: planner-first generation, per-character cooldowns, active arc management, and state-aware event weighting
+  - Needs: full architecture redesign, persistent arc storage, planner integration and story-arc management
 
 ## Implementation Details
 

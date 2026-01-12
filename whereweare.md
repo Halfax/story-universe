@@ -141,3 +141,11 @@ The current event generator is too random and basic. It needs a major overhaul:
 - [ ] Character goals/motivations should drive actions, not just traits
 - [ ] Add cooldowns - do not spam the same event types
 - [ ] Add cause-and-effect logic - events should follow from previous events
+
+Recent improvements (implemented):
+- Planner-first generation: the Narrative Engine prefers explicit events from a `NarrativePlanner` when available, falling back to weighted sampling.
+- Per-character cooldowns: characters selected for events receive short cooldowns to avoid immediate reuse across ticks.
+- Active arc management: the engine now starts and advances story arcs, biases event selection to advance existing arcs, and prunes finished arcs.
+- State-aware weighting: event type selection considers world `tension`, active arcs, and character goals to choose more narratively-appropriate events.
+
+These changes reduce pure randomness, increase coherence across ticks, and lay groundwork for longer-lived story arcs. Remaining work: persistent arc storage, planner integration refinement, and goal-driven pacing.
