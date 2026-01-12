@@ -37,6 +37,7 @@ This guide explains how to deploy each component to its target machine.
    uvicorn src.main:app --host 0.0.0.0 --port 8001
    ```
    Or, with Docker (recommended for deployment):
+   - The container uses a robust entrypoint script (start_with_clock.sh) that starts both the world clock and the API server together, guaranteeing distributed ticks and logs always work.
    - If you need to restart or update the container, use the following steps:
      1. **Stop and remove any existing container:**
         ```sh
@@ -51,7 +52,7 @@ This guide explains how to deploy each component to its target machine.
         ```sh
         sudo docker run -d --name chronicle-keeper -p 8001:8001 -p 5555:5555 chronicle-keeper
         ```
-   - To view logs from the running container:
+   - To view logs from the running container (including world clock output):
      ```sh
      sudo docker logs -f chronicle-keeper
      ```
