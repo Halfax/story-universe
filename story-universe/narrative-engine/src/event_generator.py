@@ -10,8 +10,8 @@ from generators.relationship_engine import RelationshipEngine
 from generators.narrative_planner import NarrativePlanner
 from generators.faction_engine import FactionEngine
 
-PI_API = "http://192.168.0.215:8001/event"  # Updated to actual Pi IP
-TICK_SUB_ADDR = "tcp://192.168.0.215:5555"  # Updated to actual Pi IP
+PI_API = "http://localhost:8001/event"  # Updated to actual Pi IP
+TICK_SUB_ADDR = "tcp://localhost:5555"  # Updated to actual Pi IP
 
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
