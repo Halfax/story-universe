@@ -67,14 +67,3 @@ def start_world_clock():
 	t = threading.Thread(target=world_clock_loop, daemon=True)
 	t.start()
 
-# Top-level error catch for script run
-if __name__ == "__main__":
-	try:
-		print("[ChronicleKeeper] clock.py __main__ entry", flush=True)
-		start_world_clock()
-		while True:
-			time.sleep(60)
-	except Exception as main_exc:
-		import traceback
-		print("[ChronicleKeeper] Fatal error in clock.py __main__:", flush=True)
-		traceback.print_exc()
