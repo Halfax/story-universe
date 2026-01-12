@@ -8,21 +8,26 @@
 #
 # This module is intended for integration into event_generator.py to generate faction-related events.
 
+"""FactionEngine: simple faction events generator.
+
+This module currently uses a static faction list. In future it can
+derive factions from `CharacterManager` (e.g., character.faction).
+"""
+from typing import Any, Dict, Optional
 import random
 
+
 class FactionEngine:
-    def __init__(self, character_manager):
-        """
-        Initialize with a CharacterManager instance.
-        """
+    def __init__(self, character_manager: Any) -> None:
+        """Initialize with a `CharacterManager`-like object."""
         self.character_manager = character_manager
-        # Example: Factions could be derived from character data or static for now
+        # static placeholder factions for prototyping
         self.factions = ["Red Order", "Blue Syndicate", "Green League"]
 
-    def generate_faction_event(self):
-        """
-        Generate a simple faction event (e.g., alliance, conflict, recruitment).
-        Returns a dict with faction, action, and summary, or None if no factions.
+    def generate_faction_event(self) -> Optional[Dict[str, Any]]:
+        """Generate a simple faction event.
+
+        Returns a dict with keys: `faction`, `action`, `target`, `summary`.
         """
         if not self.factions:
             return None

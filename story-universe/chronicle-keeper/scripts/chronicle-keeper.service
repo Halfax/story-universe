@@ -1,0 +1,15 @@
+[Unit]
+Description=Chronicle Keeper Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/app
+ExecStart=/usr/bin/python -m src.main
+Restart=always
+RestartSec=5
+Environment=CHRONICLE_KEEPER_DB_PATH=/data/chronicle.db
+
+[Install]
+WantedBy=multi-user.target

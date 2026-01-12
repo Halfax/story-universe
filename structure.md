@@ -9,7 +9,7 @@ story-universe/
 │   │   ├── event.py                 # Event, EventType, TickEvent
 │   │   ├── location.py              # Location, Region, Map
 │   │   ├── faction.py               # Faction, Alliance, Conflict
-│   │   ├── world_state.py           # WorldState, WorldRules
+│   │   ├── world_state.py           # (DEPRECATED) Previously used world_state container; runtime state is stored in `character_state` and `system_state`
 │   │   └── timeline.py              # TimePoint, Era, Calendar
 │   ├── protocols/
 │   │   ├── __init__.py
@@ -111,55 +111,7 @@ story-universe/
 
 ## High-Value Next Phase TODOs
 
-### 🟩 1. Chronicle Keeper (Pi) — Deepen the Canon
-- Expand Continuity Validator:
-	- Timeline consistency
-	- Character state transitions
-	- Relationship constraints
-	- Faction rules
-	- Location constraints
-	- Contradiction detection
-	- Event deduplication
-	- Lore-aware validation (magic, physics, politics)
-- Add World Rules:
-	- Magic system
-	- Character histories
-	- Faction summaries
-
-### 🟥 2. Narrative Engine (Evo‑X2) — Bring the World to Life
-- Expand Simulation Logic:
-	- Faction conflicts
-	- Political dynamics
-	- Economic systems
-	- Character motivations
-	- Relationship evolution
-	- Emergent events
-- Narrative Planning:
-	- Plot threads
-	- Rising/falling tension
-	- Character arcs
-	- World-scale events
-- Richer Character Behavior:
-	- Personality traits
-	- Alliances, rivalries
-	- Emotional states
-
-### 🟦 3. World Browser (Alienware) — Make the Universe Visible
-- Visual Maps:
-	- Character positions
-	- Faction territories
-	- Region overlays
-- Relationship Graphs:
-	- Character webs
-	- Faction alliances
-	- Event chains
-	- Influence networks
-- Timeline Explorer:
-	- Scrollable timeline
-	- Story arcs
-	- Character-centric timelines
-- UI Polish:
-	- Better layout, icons, color coding, animations, tooltips, search bar
+This project's consolidated TODOs have been moved to `TODO.md` at the repository root. Refer to that file for the prioritized list of tasks and implementation notes.
 │   │   ├── simulation/
 │   │   │   ├── politics.py          # Political simulation
 │   │   │   ├── economy.py           # Economic systems
@@ -243,7 +195,7 @@ Activate with:
 
 1. `shared/models/event.py` — Event, TickEvent
 2. `shared/models/character.py` — Character basics
-3. `shared/models/world_state.py` — WorldState container
+3. `shared/models/world_state.py` — WorldState container (removed; use `character_state` and `system_state` tables)
 4. `chronicle-keeper/src/db/schema.sql` — Tables
 5. `chronicle-keeper/src/main.py` — FastAPI with 2 endpoints
 6. `narrative-engine/src/main.py` — Tick listener + simple generator

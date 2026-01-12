@@ -93,8 +93,8 @@ It generates structured events like:
 3. Pi validates and logs the events
 - checks for contradictions
 - updates the timeline
-- updates character states
-- updates world state
+- updates character runtime state (stored in `character_state`)
+- updates global runtime values (stored in `system_state`, e.g., `time`)
 4. Alienware pulls updates and visualizes them
 - updates the map
 - updates the timeline

@@ -80,7 +80,7 @@ This node is responsible for:
 The following core files and stubs have been created for the Chronicle Keeper:
 - FastAPI app entry (main.py)
 - Database schema (schema.sql)
-- Shared models (event.py, character.py, world_state.py)
+- Shared models (event.py, character.py) — `world_state.py` removed; runtime state now in DB (`character_state`, `system_state`)
 - API endpoints stubs (events.py, world.py, characters.py, locations.py, factions.py)
 - Service and messaging stubs (clock.py, validator.py, publisher.py)
 - Dockerfile, requirements.txt, config.yaml
@@ -136,7 +136,7 @@ events
 - involved_characters (JSON)
 - involved_locations (JSON)
 - metadata (JSON)
-world_state
+    system_state (global runtime keys) and `character_state` (per-character JSON runtime blobs)
 - key
 - value
 This gives you a flexible backbone for a growing universe.
@@ -271,7 +271,7 @@ def get_world():
     c.execute("SELECT * FROM events ORDER BY timestamp DESC LIMIT 50")
     events = c.fetchall()
 
-    c.execute("SELECT key, value FROM world_state")
+    c.execute("SELECT key, value FROM system_state")
     state = {row[0]: row[1] for row in c.fetchall()}
 
     conn.close()

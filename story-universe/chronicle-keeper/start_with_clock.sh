@@ -10,4 +10,6 @@ export PYTHONPATH=/app
 python3 -u src/services/clock.py 2>&1 | tee /app/clock.log &
 
 # Start the FastAPI server
-exec uvicorn src.main:app --host 0.0.0.0 --port 8001
+UVICORN_HOST=${CHRONICLE_HOST:-0.0.0.0}
+UVICORN_PORT=${CHRONICLE_PORT:-8001}
+exec uvicorn src.main:app --host "$UVICORN_HOST" --port "$UVICORN_PORT"

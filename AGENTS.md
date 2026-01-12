@@ -4,6 +4,11 @@
 <!-- Add commands as project develops -->
 <!-- Example: npm test -- path/to/test.ts (single test) -->
 
+- **Python venvs:** The Narrative Engine virtual environment lives at `narrative-engine/venv`.
+	- On Windows (PowerShell): `narrative-engine\venv\Scripts\Activate.ps1` or `narrative-engine\venv\Scripts\activate` (cmd).
+	- On Linux/macOS: `source narrative-engine/venv/bin/activate`.
+	- After activating the venv, install dependencies with `pip install -r narrative-engine/requirements.txt` and run tests from the repo root with `python -m unittest discover -s narrative-engine/tests -v`.
+
 ## Architecture
 This is a new project. Document structure here as it develops.
 

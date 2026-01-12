@@ -16,9 +16,16 @@ def setup_test_db(db_path):
     )
     """)
     c.execute("""
-    CREATE TABLE IF NOT EXISTS world_state (
+    CREATE TABLE IF NOT EXISTS system_state (
         key TEXT PRIMARY KEY,
         value TEXT
+    )
+    """)
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS character_state (
+        character_id INTEGER PRIMARY KEY,
+        state TEXT,
+        last_updated INTEGER
     )
     """)
     conn.commit()

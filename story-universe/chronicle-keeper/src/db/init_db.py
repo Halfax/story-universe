@@ -9,8 +9,14 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     with open(SCHEMA_PATH, 'r') as f:
         conn.executescript(f.read())
-    # Ensure world_state and events tables exist for automation
-    conn.execute('''CREATE TABLE IF NOT EXISTS world_state (
+    # Ensure character_state, system_state and events tables exist for automation
+    conn.execute('''CREATE TABLE IF NOT EXISTS character_state (
+        character_id INTEGER PRIMARY KEY,
+        state TEXT,
+        last_updated INTEGER,
+        FOREIGN KEY(character_id) REFERENCES characters(id)
+    )''')
+    conn.execute('''CREATE TABLE IF NOT EXISTS system_state (
         key TEXT PRIMARY KEY,
         value TEXT
     )''')
