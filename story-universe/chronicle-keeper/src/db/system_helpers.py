@@ -3,6 +3,7 @@
 Small convenience functions used by services to fetch/update global
 runtime keys (e.g., `time`) and per-character runtime JSON blobs.
 """
+
 from typing import Any, Optional, Dict
 import json
 
@@ -11,6 +12,7 @@ def _get_conn(db_conn_getter=None):
     if db_conn_getter:
         return db_conn_getter()
     from src.db.database import get_connection
+
     return get_connection()
 
 
@@ -30,7 +32,9 @@ def get_system_value(key: str, db_conn_getter=None) -> Optional[str]:
 def set_system_value(key: str, value: Any, db_conn_getter=None):
     conn = _get_conn(db_conn_getter)
     cur = conn.cursor()
-    cur.execute("REPLACE INTO system_state (key, value) VALUES (?, ?)", (key, str(value)))
+    cur.execute(
+        "REPLACE INTO system_state (key, value) VALUES (?, ?)", (key, str(value))
+    )
     conn.commit()
     try:
         if db_conn_getter is None:
@@ -42,7 +46,9 @@ def set_system_value(key: str, value: Any, db_conn_getter=None):
 def get_character_state(character_id: int, db_conn_getter=None) -> Dict[str, Any]:
     conn = _get_conn(db_conn_getter)
     cur = conn.cursor()
-    cur.execute("SELECT state FROM character_state WHERE character_id=?", (int(character_id),))
+    cur.execute(
+        "SELECT state FROM character_state WHERE character_id=?", (int(character_id),)
+    )
     row = cur.fetchone()
     try:
         if row and row[0]:
@@ -61,7 +67,10 @@ def get_character_state(character_id: int, db_conn_getter=None) -> Dict[str, Any
 def set_character_state(character_id: int, state: Dict[str, Any], db_conn_getter=None):
     conn = _get_conn(db_conn_getter)
     cur = conn.cursor()
-    cur.execute("REPLACE INTO character_state (character_id, state, last_updated) VALUES (?, ?, ?)", (int(character_id), json.dumps(state), int(__import__('time').time())))
+    cur.execute(
+        "REPLACE INTO character_state (character_id, state, last_updated) VALUES (?, ?, ?)",
+        (int(character_id), json.dumps(state), int(__import__("time").time())),
+    )
     conn.commit()
     try:
         if db_conn_getter is None:

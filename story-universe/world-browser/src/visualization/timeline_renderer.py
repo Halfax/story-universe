@@ -60,17 +60,39 @@ class TimelineView(QGraphicsView):
         self.animation = QPropertyAnimation(self, b"view_rect")
         self.animation.setEasingCurve(QEasingCurve.OutCubic)
         self.animation.setDuration(300)
-        
+
         # Data
         self.tracks = {}  # Track ID -> Track data
         self.events = {}  # Event ID -> Event data
         self.categories = {}  # Category ID -> Category data
-        
+
         # Current selection
         self.selected_event = None
-        
+
         # Initialize the timeline
         self.setup_timeline()
+
+    
+
+    # Provide a `view_rect` property so QPropertyAnimation has a valid target.
+    def get_view_rect(self) -> QRectF:
+        try:
+            return self.scene.sceneRect() if self.scene() is not None else QRectF()
+        except Exception:
+            return QRectF()
+
+    def set_view_rect(self, rect: QRectF):
+        try:
+            # Apply rect to scene or view as best-effort
+            if self.scene():
+                self.scene().setSceneRect(rect)
+            else:
+                self.setSceneRect(rect)
+        except Exception:
+            pass
+
+    view_rect = Property(QRectF, get_view_rect, set_view_rect)
+    
         
     def setup_timeline(self):
         """Set up the initial timeline visualization."""
@@ -286,7 +308,7 @@ class TimelineView(QGraphicsView):
                 event_item = self.scene.addRect(
                     event_rect,
                     QPen(Qt.black, 1),
-                    QBrush(event['color'])
+                    QBrush(event['color'] if event.get('color') is not None else QColor(100, 150, 255))
                 )
                 
                 # Add event properties

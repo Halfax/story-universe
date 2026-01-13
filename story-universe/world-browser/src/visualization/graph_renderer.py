@@ -223,6 +223,11 @@ class GraphEdge(QGraphicsItem):
 
 class RelationshipGraph(QGraphicsView):
     """Interactive view for displaying and editing relationship graphs."""
+    # Signals for external panels
+    node_clicked = Signal(str)
+    node_double_clicked = Signal(str)
+    edge_clicked = Signal(str, str)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         
@@ -366,10 +371,48 @@ class RelationshipGraph(QGraphicsView):
         super().mousePressEvent(event)
         
     def mouseReleaseEvent(self, event):
-        """Handle mouse release events."""
+        """Handle mouse release events and emit click signals."""
         if event.button() == Qt.RightButton:
             self.setDragMode(QGraphicsView.NoDrag)
         super().mouseReleaseEvent(event)
+
+        # On left click, detect the topmost item under cursor and emit signals
+        try:
+            if event.button() == Qt.LeftButton:
+                pos = self.mapToScene(event.position().toPoint())
+                items = self.scene.items(pos)
+                for it in items:
+                    if isinstance(it, GraphNode):
+                        try:
+                            self.node_clicked.emit(it.node_id)
+                        except Exception:
+                            pass
+                        return
+                    if isinstance(it, GraphEdge):
+                        try:
+                            self.edge_clicked.emit(it.source.node_id, it.target.node_id)
+                        except Exception:
+                            pass
+                        return
+        except Exception:
+            pass
+
+    def mouseDoubleClickEvent(self, event):
+        """Handle double-click events and emit node double-click signal."""
+        super().mouseDoubleClickEvent(event)
+        try:
+            if event.button() == Qt.LeftButton:
+                pos = self.mapToScene(event.position().toPoint())
+                items = self.scene.items(pos)
+                for it in items:
+                    if isinstance(it, GraphNode):
+                        try:
+                            self.node_double_clicked.emit(it.node_id)
+                        except Exception:
+                            pass
+                        return
+        except Exception:
+            pass
         
     def animate(self):
         """Update the graph layout using a force-directed algorithm."""

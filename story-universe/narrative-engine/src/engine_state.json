@@ -1,11 +1,11 @@
 {
   "cooldowns": {
-    "relationship": 1768249230.763854,
-    "explore": 1768249354.641209,
-    "mystery": 1768250308.0873046,
-    "alliance": 1768249229.788869,
-    "conflict": 1768249670.6868114,
-    "movement": 1768249358.641209,
+    "relationship": 1768308958.417248,
+    "explore": 1768309475.2620356,
+    "mystery": 1768307855.2483907,
+    "alliance": 1768305679.17781,
+    "conflict": 1768309087.6972787,
+    "movement": 1768306814.671655,
     "resolution": 1768249326.640126
   },
   "arcs": [
@@ -29,23 +29,23 @@
     }
   ],
   "last_event": {
-    "type": "mystery",
+    "type": "explore",
     "involved_characters": [
-      "char_mock_0"
+      "char_mock_1"
     ],
     "involved_locations": [
-      "loc_mock_2"
+      "loc_mock_3"
     ],
     "involved_factions": [
-      "The Forsaken Phoenix of Redshore"
+      "The Cracked Harbor of Rivermark"
     ],
-    "description": "mystery involving char_mock_0; factions: The Forsaken Phoenix of Redshore",
+    "description": "explore involving char_mock_1; factions: The Cracked Harbor of Rivermark",
     "metadata": {
-      "causationId": "evt_1768249610_2642",
-      "correlationId": "corr_1768250257_6428"
+      "causationId": "evt_1768309057_2567",
+      "correlationId": "corr_1768309432_3891"
     },
     "source": "narrative_engine",
-    "id": "evt_1768250257_9191",
-    "timestamp": 1768250257
+    "id": "evt_1768309432_1573",
+    "timestamp": 1768309432
   }
 }

@@ -1,15 +1,18 @@
 import json
-from typing import Optional, Callable, Any, Dict
+from typing import Optional, Callable, Any, Dict, List
 
 
 def _get_conn(db_conn_getter: Optional[Callable[[], Any]] = None):
     if db_conn_getter:
         return db_conn_getter()
     from src.db.database import get_connection
+
     return get_connection()
 
 
-def handle_event(event: Dict[str, Any], db_conn_getter: Optional[Callable[[], Any]] = None) -> Optional[Dict[str, Any]]:
+def handle_event(
+    event: Dict[str, Any], db_conn_getter: Optional[Callable[[], Any]] = None
+) -> Optional[Dict[str, Any]]:
     """Handle incoming events and apply side effects to canonical state.
 
     Currently supports `item_use` events by applying `items.effects` to
@@ -17,28 +20,34 @@ def handle_event(event: Dict[str, Any], db_conn_getter: Optional[Callable[[], An
     (recommended: `character_state.state` contains a JSON blob for per-character runtime state).
     """
     try:
-        etype = event.get('type')
-        if etype == 'item_use' or etype == 'item_use_decision' or etype == 'item_use':
+        etype = event.get("type")
+        if etype == "item_use" or etype == "item_use_decision" or etype == "item_use":
             return _apply_item_use_effects(event, db_conn_getter=db_conn_getter)
         # Other event types can be handled here
         return None
     except Exception:
         # Non-fatal: log where appropriate
         import traceback
+
         traceback.print_exc()
         return None
 
 
-def _apply_item_use_effects(event: Dict[str, Any], db_conn_getter: Optional[Callable[[], Any]] = None) -> Dict[str, Any]:
+def _apply_item_use_effects(
+    event: Dict[str, Any], db_conn_getter: Optional[Callable[[], Any]] = None
+) -> Dict[str, Any]:
     conn = _get_conn(db_conn_getter)
     cur = conn.cursor()
 
-    inventory_id = int(event.get('inventory_id'))
-    character_id = str(event.get('character_id'))
-    quantity = int(event.get('quantity', 1))
+    inventory_id = int(event.get("inventory_id"))
+    character_id = str(event.get("character_id"))
+    quantity = int(event.get("quantity", 1))
 
     # Load inventory and item
-    cur.execute('SELECT i.*, it.effects FROM inventory i JOIN items it ON i.item_id = it.id WHERE i.id=?', (inventory_id,))
+    cur.execute(
+        "SELECT i.*, it.effects FROM inventory i JOIN items it ON i.item_id = it.id WHERE i.id=?",
+        (inventory_id,),
+    )
     row = cur.fetchone()
     if not row:
         return {}
@@ -62,7 +71,9 @@ def _apply_item_use_effects(event: Dict[str, Any], db_conn_getter: Optional[Call
             computed[k] = v
 
     # Load existing character state from `character_state` table
-    cur.execute('SELECT state FROM character_state WHERE character_id=?', (int(character_id),))
+    cur.execute(
+        "SELECT state FROM character_state WHERE character_id=?", (int(character_id),)
+    )
     row = cur.fetchone()
     if row and row[0]:
         try:
@@ -82,8 +93,35 @@ def _apply_item_use_effects(event: Dict[str, Any], db_conn_getter: Optional[Call
     # Persist back to world_state (upsert)
     value = json.dumps(state)
     import time
+
     ts = int(time.time())
-    cur.execute('INSERT OR REPLACE INTO character_state (character_id, state, last_updated) VALUES (?, ?, ?)', (int(character_id), value, ts))
+    cur.execute(
+        "INSERT OR REPLACE INTO character_state (character_id, state, last_updated) VALUES (?, ?, ?)",
+        (int(character_id), value, ts),
+    )
     conn.commit()
+    try:
+        conn.close()
+    except Exception:
+        pass
 
     return state
+
+
+def handle_tick_batch(
+    events: List[Dict[str, Any]], db_conn_getter: Optional[Callable[[], Any]] = None
+) -> None:
+    """Handle a batch of tick/system events. Default behavior: noop or light-weight aggregation.
+
+    Implementations can override this to efficiently process many ticks together
+    (e.g., advance multiple world_time steps in a single DB transaction).
+    """
+    try:
+        # Simple default: call handle_event for each tick to preserve side-effects
+        for ev in events:
+            handle_event(ev, db_conn_getter=db_conn_getter)
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        return None
