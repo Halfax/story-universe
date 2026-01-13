@@ -1,0 +1,9 @@
+pydantic
+pytest
+jsonschema
+pyzmq
+fastapi
+httpx
+uvicorn
+pytest-cov
+requests

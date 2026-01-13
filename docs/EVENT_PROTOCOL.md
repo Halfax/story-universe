@@ -122,3 +122,5 @@ All events must include these fields:
 - Protocol version is included in the Chronicle Keeper API response
 - Breaking changes require a major version bump
 - Components should handle unknown event types gracefully
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).

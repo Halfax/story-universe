@@ -128,6 +128,7 @@ class Character(Model):
 3. Update Narrative Engine to use new event format
 4. Enhance Continuity Validator with new rules
 
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
 ## Dependencies
 - Chronicle Keeper: v0.2.0+
 - Narrative Engine: v0.3.0+

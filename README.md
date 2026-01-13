@@ -29,14 +29,14 @@ Story Universe is composed of three main components that work together to create
 
 1. **Chronicle Keeper**
    ```bash
-   cd story-universe/chronicle-keeper
+   cd chronicle-keeper
    docker build -t chronicle-keeper .
    docker run -p 8001:8001 chronicle-keeper
    ```
 
 2. **Narrative Engine**
    ```bash
-   cd story-universe/narrative-engine
+   cd narrative-engine
    python -m venv venv
    source venv/bin/activate  # or `venv\Scripts\activate` on Windows
    pip install -r requirements.txt
@@ -45,17 +45,24 @@ Story Universe is composed of three main components that work together to create
 
 3. **World Browser**
    ```bash
-   cd story-universe/world-browser
+   cd world-browser
    npm install
    npm run dev
    ```
 
+## Configuration
+
+Environment-derived configuration values are centralized in `shared/config.py` (and package-local `src/config.py` files). Import configuration constants from the appropriate `config.py` instead of calling `os.getenv` directly from other modules.
+
+
 ## Development
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md) for details.
 
 ### Project Structure
 
 ```
-story-universe/
+ repository root
 ├── chronicle-keeper/    # Core service for world state
 ├── narrative-engine/    # Event generation and processing
 ├── world-browser/      # Visualization and UI

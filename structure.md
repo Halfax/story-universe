@@ -1,7 +1,7 @@
 # Project Structure Plan
 
 ```
-story-universe/
+repository root (story-universe/)
 ├── shared/                          # Shared across all machines
 │   ├── models/
 │   │   ├── __init__.py
@@ -222,3 +222,5 @@ Activate with:
 - Validator now covers: timeline, state transitions, relationship constraints, faction rules, location constraints, and contradiction detection.
 
 ---
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).

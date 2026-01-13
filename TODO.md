@@ -9,15 +9,15 @@
   - [x] Add event handlers and middleware
   - [x] Document event types and schemas
   - [x] Event System Integration: middleware hooks, idempotency, replay, tick-batching (implemented)
-    - Files: `story-universe/chronicle-keeper/src/services/event_handlers.py`, `story-universe/chronicle-keeper/src/services/event_consumer.py`, `story-universe/chronicle-keeper/src/main.py`
+    - Files: `src/services/event_handlers.py`, `src/services/event_consumer.py`, `src/main.py`
 
-- [ ] **Shared Models**
+ - [x] **Shared Models**
   - [x] Base Model and Event classes
   - [x] Character model with validation
   - [x] Location model with coordinates
   - [x] Item and Inventory system
   - [x] Model serialization/deserialization
-  - [ ] Unit tests for all models
+  - [x] Unit tests for all models
 
 - [ ] **Validation System**
   - [x] Core validation framework
@@ -29,20 +29,21 @@
 ### Medium Priority
 - [ ] **Tick Publisher**
   - [x] Basic implementation
-  - [ ] Error recovery
-  - [ ] Backpressure handling
+  - [x] Error recovery
+  - [x] Backpressure handling
   - [ ] Performance testing
 
 - [ ] **Continuity Validator**
-  - [ ] Define validation rules
-  - [ ] Implement timeline checks
-  - [ ] Add narrative constraints
-  - [ ] Performance optimization
+  - [x] Define validation rules
+  - [x] Implement timeline checks
+  - [x] Add narrative constraints
+  - [x] Performance optimization
 
 - [ ] **Narrative Engine**
+ - [ ] **Narrative Engine**
   - [ ] Redesign architecture
   - [ ] Implement event processing
-  - [ ] Add story arc management
+  - [x] Add story arc management
   - [ ] Improve character AI
 
 ## Infrastructure
@@ -162,21 +163,22 @@ These unblock everything else. They’re foundational.
   - Add caching + performance improvements (validator-level state cache TTL)
   - Why: bad events corrupt world-state. Fixing this early prevents cascading failures.
 
-3. **Continuity Engine (apply_event_consequences)**
+3. **Continuity Engine (apply_event_consequences)** — Completed (2026-01-13)
   - Persona-aware scaling
   - Faction-aware scaling
   - Multi-target consequences
   - Reversible consequences
   - Stability/severity sanity checks
   - Why: narrative engine depends on predictable, correct consequences.
+  - Notes: Implemented in `src/services/continuity.py`; schema/table `event_consequences` added to `src/db/schema.sql` and `src/db/init_db.py`. Documented in `docs/EVENT_CONSEQUENCES.md` and `CHANGES.md`.
 
 ### Tier 1 — Core Simulation Loop Reliability
 4. **Tick Publisher Reliability**
-  - Retry logic
-  - Dead-letter queue
-  - Backpressure detection
-  - Tick-lag monitoring
-  - Tick batching
+  - [x] Retry logic
+  - [x] Dead-letter queue
+  - [x] Backpressure detection
+  - [x] Tick-lag monitoring
+  - [x] Tick batching
 
 5. **Shared Models (Items, Inventory, Characters, Factions)**
   - Add missing fields
@@ -268,6 +270,8 @@ _These enrich the world but don’t block core functionality._
 
 *Last Updated: 2026-01-13*
 
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md) for details.
+
 ## Agent Tracker Snapshot (2026-01-12)
 
 The agent's internal tracker (live):
@@ -285,11 +289,11 @@ This snapshot reflects the agent-run task tracker and is provided for visibility
 
 The master agent tracker below is kept in sync with the repository `TODO.md` and the assistant's internal tracker. Items the agent marked as completed are noted.
 
-- [ ] Implement event validation
-- [ ] Finish shared models
+- [x] Implement event validation
+ - [x] Finish shared models
 - [ ] Add inventory system
 - [ ] Expand continuity validator
-- [ ] Add tick publisher recovery
+ - [x] Add tick publisher recovery
 - [ ] Narrative engine redesign
 - [ ] Persist story arcs
 - [ ] Set up CI/CD pipeline
@@ -317,6 +321,9 @@ The master agent tracker below is kept in sync with the repository `TODO.md` and
 ## Next Immediate Task
 
 - [ ] Run CI (GitHub Actions) for the `cleanup/logging` branch and request review/merge
+
+ - [ ] Move environment variable configs into `src/config.py` and replace all `os.getenv` lookups in code with imports from `config.py` (publisher, other modules)
+ - [x] Move environment variable configs into `src/config.py` and replace all `os.getenv` lookups in code with imports from `config.py` (publisher, other modules)
 
 -- Agent note: I will keep this tracker and `TODO.md` synchronized. When I complete or update any task above I will immediately update this section and the internal tracker so nothing is missed.
 

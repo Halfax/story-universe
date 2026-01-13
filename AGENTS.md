@@ -4,10 +4,16 @@
 <!-- Add commands as project develops -->
 <!-- Example: npm test -- path/to/test.ts (single test) -->
 
-- **Python venvs:** The Narrative Engine virtual environment lives at `narrative-engine/venv`.
-	- On Windows (PowerShell): `narrative-engine\venv\Scripts\Activate.ps1` or `narrative-engine\venv\Scripts\activate` (cmd).
-	- On Linux/macOS: `source narrative-engine/venv/bin/activate`.
-	- After activating the venv, install dependencies with `pip install -r narrative-engine/requirements.txt` and run tests from the repo root with `python -m unittest discover -s narrative-engine/tests -v`.
+**Virtual environments:** The preferred venv for development is the repo-level `./venv` at the repository root. Component-level venvs (from older layouts) may exist in subfolders — prefer the root venv for consistency.
+	- On Windows (PowerShell): `venv\Scripts\Activate.ps1` or `venv\Scripts\activate` (cmd).
+	- On Linux/macOS: `source venv/bin/activate`.
+	- Install dependencies and run tests from the root with (PowerShell example):
+
+		$env:PYTHONPATH='src'; .\venv\Scripts\python.exe -m unittest discover -s tests -v
+
+	  Or (POSIX):
+
+		PYTHONPATH=src ./venv/bin/python -m unittest discover -s tests -v
 
 ## Architecture
 This is a new project. Document structure here as it develops.
@@ -27,25 +33,28 @@ This is a new project. Document structure here as it develops.
 ## Startup on Reboot
 This project includes a small helper and cron entry to start the `chronicle-keeper` Docker container automatically on system reboot.
 
-- **Files:**
-	- [story-universe/chronicle-keeper/scripts/start_on_boot.sh](story-universe/chronicle-keeper/scripts/start_on_boot.sh#L1-L200) — startup helper that waits briefly and ensures the container is running or starts it.
-	- [story-universe/chronicle-keeper/cron/chronicle-keeper](story-universe/chronicle-keeper/cron/chronicle-keeper#L1-L50) — cron.d entry that runs the helper on `@reboot` as `root`.
-	- [story-universe/chronicle-keeper/scripts/install_cron.sh](story-universe/chronicle-keeper/scripts/install_cron.sh#L1-L200) — installer script to copy the cron file into `/etc/cron.d/` and set permissions.
+**Startup on reboot / host helpers:**
 
-- **Install (run on host):**
+Some deployment helpers (startup scripts, cron entries) previously lived under component folders before the repo layout was flattened. The authoritative locations and installer scripts were moved or consolidated. See `docs/REPO_LAYOUT_CHANGE.md` for exact file moves.
 
-```sh
-sudo chmod +x story-universe/chronicle-keeper/scripts/start_on_boot.sh
-sudo story-universe/chronicle-keeper/scripts/install_cron.sh
+If you need to install a startup helper on the host, copy the current script into `/etc/cron.d/` or create a `systemd` unit. Example (update paths to match your host layout):
+
+```powershell
+sudo chmod +x ./tools/start_on_boot.sh
+sudo ./tools/install_cron.sh
 ```
 
-- **What it does:** The helper will start the container with `docker run -d --name chronicle-keeper --restart unless-stopped -p 8001:8001 chronicle-keeper` if the container doesn't already exist or run, and the cron entry ensures the helper runs at every reboot.
+Or create a `systemd` unit pointing to the container `docker run` command shown below.
 
-If you prefer a `systemd` service instead of `cron.d`, say so and I will add a unit file.
+**What it does:** The helper starts the `chronicle-keeper` container with:
+
+```
+docker run -d --name chronicle-keeper --restart unless-stopped -p 8001:8001 chronicle-keeper
+```
+
+If you prefer a `systemd` service instead of `cron.d`, say so and I will add a unit file and a host installation guide.
 
 ## Agent Tracker Sync
 
-- The assistant (agent) will maintain an internal task tracker and keep it synchronized with the repository `TODO.md` file.
-- When the agent marks a task completed or updates status, it will immediately patch `TODO.md` with an "Agent Tracker Snapshot" section so the repo reflects the same state.
-- If you want the agent to stop updating the `TODO.md` snapshot, tell the agent and it will only keep its internal tracker.
-- The authoritative master TODO remains `TODO.md`; the agent will also keep a backup snapshot on request.
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md) for details on the new `src/` and `tests/` layout.

@@ -238,6 +238,8 @@ class CustomTimeline(TimelinePanel):
 ### Common Issues
 
 1. **Missing Dependencies**
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
    - Ensure all required packages are installed:
      ```
      pip install PySide6 networkx

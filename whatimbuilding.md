@@ -121,6 +121,8 @@ Pi (Chronicle Keeper)
 - FastAPI
 - SQLite or DuckDB
 - Pydantic models
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
 - ZeroMQ or MQTT
 Evo‑X2 (Narrative Engine)
 - PyTorch / ONNX Runtime
