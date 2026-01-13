@@ -8,7 +8,6 @@ return a result or None.
 
 from typing import Any, Callable, Dict, Optional, List
 import time
-import json
 
 from src.services import event_consumer
 from src.db.database import get_connection

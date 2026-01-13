@@ -11,3 +11,6 @@ Chronicle Keeper — Change Log
 Notes:
 - Schema migration in `src/db/schema.sql` preserves the old `factions` table where possible and migrates to the enhanced schema.
 - Next work: wire `trust` into generator weighting; add unit tests for validator rules; add a CSV importer step to seed metrics where appropriate.
+
+2026-01-13
+- Add `event_consequences` table to schema to persist compact undo payloads for reversible event consequences. `apply_event_consequences` may insert into this table when events include `reversible=true` and have an `id`. This table is created by `src/db/schema.sql` and ensured during `src/db/init_db.py` initialization (and therefore created when the Docker image runs the DB initializer).

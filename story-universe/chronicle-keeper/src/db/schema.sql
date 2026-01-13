@@ -147,3 +147,13 @@ CREATE TABLE IF NOT EXISTS system_state (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- Store compact undo payloads for reversible event consequences. Populated when
+-- `apply_event_consequences` receives an event with `reversible` set and an `id`.
+CREATE TABLE IF NOT EXISTS event_consequences (
+    event_id TEXT PRIMARY KEY,
+    reversible INTEGER DEFAULT 0,
+    undo_payload TEXT,
+    applied_ts INTEGER,
+    metadata TEXT
+);

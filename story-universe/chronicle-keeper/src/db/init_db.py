@@ -36,6 +36,16 @@ def init_db():
         metadata TEXT
     )"""
     )
+    # Ensure reversible consequences table exists for operator-driven undo/review
+    conn.execute(
+        """CREATE TABLE IF NOT EXISTS event_consequences (
+        event_id TEXT PRIMARY KEY,
+        reversible INTEGER DEFAULT 0,
+        undo_payload TEXT,
+        applied_ts INTEGER,
+        metadata TEXT
+    )"""
+    )
     conn.commit()
     conn.close()
 

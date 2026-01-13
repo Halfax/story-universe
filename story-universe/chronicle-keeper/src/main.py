@@ -1,5 +1,5 @@
 # FastAPI app entry for Chronicle Keeper (Raspberry Pi 5)
-from fastapi import FastAPI, Request, HTTPException, status, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, status, Depends, BackgroundTasks
 from typing import Optional
 import os
 
@@ -18,7 +18,6 @@ import time
 
 from src.messaging.publisher import TickPublisher
 from src.config import ZMQ_PUB_CLIENT_ADDR
-from src.services.clock import start_world_clock
 from src.models.canonical_event import CanonicalEvent
 from pydantic import ValidationError
 import random

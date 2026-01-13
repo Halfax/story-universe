@@ -12,13 +12,11 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 from src.db.database import get_connection
-from src.messaging.publisher import TickPublisher, ConnectionState
-from src.config import TICK_PUBLISHER_RECONNECT_DELAY
-
-logger = logging.getLogger(__name__)
-
+from src.messaging.publisher import TickPublisher
 
 import json
+
+logger = logging.getLogger(__name__)
 
 
 class WorldClock:

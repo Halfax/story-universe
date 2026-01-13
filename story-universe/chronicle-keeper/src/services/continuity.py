@@ -10,6 +10,9 @@ Validation checks include:
 - Relationship preservation
 - World rules enforcement
 """
+import logging
+
+logger = logging.getLogger("chronicle.continuity")
 
 # Personality drift tuning constants
 # - deltas: per-action trait adjustments (applied pre-inertia)
@@ -973,6 +976,7 @@ class ContinuityValidator:
                 src = event.get("source_faction_id")
                 tgt = event.get("target_faction_id")
 
+                # parse and sanitize severity/stability; clamp to reasonable bounds
                 try:
                     severity = float(event.get("severity", 0.0) or 0.0)
                 except Exception:
@@ -981,6 +985,21 @@ class ContinuityValidator:
                     stability = float(event.get("stability", 0.0) or 0.0)
                 except Exception:
                     stability = 0.0
+                # sanity clamp: keep values within [-1.0, 1.0]
+                if severity != severity:
+                    severity = 0.0
+                severity = max(-1.0, min(1.0, severity))
+                if stability != stability:
+                    stability = 0.0
+                stability = max(-1.0, min(1.0, stability))
+
+                if abs(severity) > 0.5 or abs(stability) > 0.5:
+                    logger.warning(
+                        "Large severity/stability detected for event %s: severity=%s stability=%s",
+                        event.get("id") or "<no-id>",
+                        severity,
+                        stability,
+                    )
 
                 drift_scale = 1.0
                 if action in {"attack", "betray"}:
@@ -988,93 +1007,212 @@ class ContinuityValidator:
                 elif action == "form_alliance":
                     drift_scale = 1.0 + stability
 
+                # support multi-target consequences: either singular `target_faction_id`
+                # or list `target_faction_ids` (CSV or list)
+                targets = []
+                if event.get("target_faction_id") is not None:
+                    targets.append(str(event.get("target_faction_id")))
+                if event.get("target_faction_ids"):
+                    t = event.get("target_faction_ids")
+                    if isinstance(t, str):
+                        targets.extend([x.strip() for x in t.split(",") if x.strip()])
+                    elif isinstance(t, (list, tuple)):
+                        targets.extend([str(x) for x in t])
+                # ensure at least one target for actions that expect one
+                if not targets and action in {"attack", "betray", "form_alliance"}:
+                    targets = [str(tgt) for tgt in [event.get("target_faction_id")] if tgt is not None]
+
                 if conn:
                     cur = conn.cursor()
                     # form_alliance: upsert relationship row and set cooldown on source
-                    if action == "form_alliance":
-                        init_strength = 0.5 * (1.0 + float(stability))
-                        init_strength = max(0.0, min(1.0, init_strength))
-                        cur.execute(
-                            "INSERT OR REPLACE INTO faction_relationships (source_faction_id,target_faction_id,relationship_type,strength,cooldown_until) VALUES (?,?,?,?,?)",
-                            (src, tgt, "ally", init_strength, 0),
-                        )
-                        # set a cooldown entry to prevent immediate repeat alliances; longer stability -> longer cooldown (durable alliance)
-                        import time
-
-                        until = int(time.time()) + int(
-                            PERSONA_COOLDOWN_SECONDS * (1.0 + (1.0 - float(stability)))
-                        )
-                        cur.execute(
-                            "INSERT OR REPLACE INTO faction_cooldowns (faction_id,cooldown_key,until_ts) VALUES (?,?,?)",
-                            (src, "form_alliance", until),
-                        )
-                        conn.commit()
-
-                    if action == "attack":
-                        # lower relationship strength if exists, or create hostile row
-                        cur.execute(
-                            "SELECT strength FROM faction_relationships WHERE source_faction_id = ? AND target_faction_id = ?",
-                            (src, tgt),
-                        )
-                        row = cur.fetchone()
-                        if row:
-                            delta = 0.2 * (1.0 + float(severity))
-                            new_strength = float(row[0] or 0.0) - delta
-                            cur.execute(
-                                "UPDATE faction_relationships SET strength = ? WHERE source_faction_id = ? AND target_faction_id = ?",
-                                (new_strength, src, tgt),
-                            )
-                        else:
-                            delta = 0.2 * (1.0 + float(severity))
-                            cur.execute(
-                                "INSERT INTO faction_relationships (source_faction_id,target_faction_id,relationship_type,strength,cooldown_until) VALUES (?,?,?,?,?)",
-                                (src, tgt, "hostile", -delta, 0),
-                            )
-                        conn.commit()
-
-                        # Adjust faction metrics (trust) proportional to severity
+                    # For multi-target support, iterate targets and apply smaller, partitioned effects
+                    for tgt in targets:
+                        # capture pre-change state for possible reversal logging
+                        undo = {"relationship": None, "faction_metrics": {}, "persona": None}
                         try:
                             cur.execute(
-                                "SELECT trust FROM faction_metrics WHERE faction_id = ?",
-                                (tgt,),
+                                "SELECT relationship_type,strength,cooldown_until FROM faction_relationships WHERE source_faction_id = ? AND target_faction_id = ?",
+                                (src, tgt),
                             )
                             r = cur.fetchone()
                             if r:
-                                new_t = max(
-                                    0.0,
-                                    float(r[0] or 0.0) - 0.03 * (1.0 + float(severity)),
-                                )
+                                undo["relationship"] = {
+                                    "relationship_type": r[0],
+                                    "strength": float(r[1] or 0.0),
+                                    "cooldown_until": int(r[2] or 0),
+                                }
+                            # capture trust metrics
+                            try:
                                 cur.execute(
-                                    "UPDATE faction_metrics SET trust = ? WHERE faction_id = ?",
-                                    (new_t, tgt),
+                                    "SELECT trust FROM faction_metrics WHERE faction_id = ?",
+                                    (tgt,),
                                 )
+                                tr = cur.fetchone()
+                                if tr:
+                                    undo["faction_metrics"][str(tgt)] = float(tr[0] or 0.0)
+                            except Exception:
+                                pass
+                            # capture source persona
+                            try:
+                                cur.execute(
+                                    "SELECT personality_traits FROM factions WHERE id = ?",
+                                    (src,),
+                                )
+                                prow = cur.fetchone()
+                                import json
+
+                                if prow and prow[0]:
+                                    try:
+                                        undo["persona"] = json.loads(prow[0])
+                                    except Exception:
+                                        undo["persona"] = None
+                            except Exception:
+                                pass
+                        except Exception:
+                            pass
+
+                        if action == "form_alliance":
+                            init_strength = 0.5 * (1.0 + float(stability))
+                            init_strength = max(0.0, min(1.0, init_strength))
                             cur.execute(
-                                "SELECT trust FROM faction_metrics WHERE faction_id = ?",
-                                (src,),
+                                "INSERT OR REPLACE INTO faction_relationships (source_faction_id,target_faction_id,relationship_type,strength,cooldown_until) VALUES (?,?,?,?,?)",
+                                (src, tgt, "ally", init_strength, 0),
                             )
-                            r2 = cur.fetchone()
-                            if r2:
-                                new_s = max(
-                                    0.0,
-                                    float(r2[0] or 0.0)
-                                    - 0.005 * (1.0 + float(severity)),
-                                )
-                                cur.execute(
-                                    "UPDATE faction_metrics SET trust = ? WHERE faction_id = ?",
-                                    (new_s, src),
-                                )
-                            # set relationship cooldown proportional to severity
+                            # set a cooldown entry to prevent immediate repeat alliances; longer stability -> longer cooldown (durable alliance)
                             import time
 
-                            now_ts = int(time.time())
-                            rel_cool = now_ts + int(
-                                PERSONA_COOLDOWN_SECONDS * (1.0 + float(severity))
+                            until = int(time.time()) + int(
+                                PERSONA_COOLDOWN_SECONDS * (1.0 + (1.0 - float(stability)))
                             )
                             cur.execute(
-                                "UPDATE faction_relationships SET cooldown_until = ? WHERE source_faction_id = ? AND target_faction_id = ?",
-                                (rel_cool, src, tgt),
+                                "INSERT OR REPLACE INTO faction_cooldowns (faction_id,cooldown_key,until_ts) VALUES (?,?,?)",
+                                (src, "form_alliance", until),
                             )
                             conn.commit()
+
+                        if action == "attack":
+                            # lower relationship strength if exists, or create hostile row
+                            cur.execute(
+                                "SELECT strength FROM faction_relationships WHERE source_faction_id = ? AND target_faction_id = ?",
+                                (src, tgt),
+                            )
+                            row = cur.fetchone()
+                            if row:
+                                delta = 0.2 * (1.0 + float(severity))
+                                new_strength = float(row[0] or 0.0) - delta
+                                cur.execute(
+                                    "UPDATE faction_relationships SET strength = ? WHERE source_faction_id = ? AND target_faction_id = ?",
+                                    (new_strength, src, tgt),
+                                )
+                            else:
+                                delta = 0.2 * (1.0 + float(severity))
+                                cur.execute(
+                                    "INSERT INTO faction_relationships (source_faction_id,target_faction_id,relationship_type,strength,cooldown_until) VALUES (?,?,?,?,?)",
+                                    (src, tgt, "hostile", -delta, 0),
+                                )
+                            conn.commit()
+
+                            # Adjust faction metrics (trust) proportional to severity
+                            try:
+                                cur.execute(
+                                    "SELECT trust FROM faction_metrics WHERE faction_id = ?",
+                                    (tgt,),
+                                )
+                                r = cur.fetchone()
+                                if r:
+                                    new_t = max(
+                                        0.0,
+                                        float(r[0] or 0.0) - 0.03 * (1.0 + float(severity)),
+                                    )
+                                    cur.execute(
+                                        "UPDATE faction_metrics SET trust = ? WHERE faction_id = ?",
+                                        (new_t, tgt),
+                                    )
+                                cur.execute(
+                                    "SELECT trust FROM faction_metrics WHERE faction_id = ?",
+                                    (src,),
+                                )
+                                r2 = cur.fetchone()
+                                if r2:
+                                    new_s = max(
+                                        0.0,
+                                        float(r2[0] or 0.0) - 0.005 * (1.0 + float(severity)),
+                                    )
+                                    cur.execute(
+                                        "UPDATE faction_metrics SET trust = ? WHERE faction_id = ?",
+                                        (new_s, src),
+                                    )
+                                # set relationship cooldown proportional to severity
+                                import time
+
+                                now_ts = int(time.time())
+                                rel_cool = now_ts + int(
+                                    PERSONA_COOLDOWN_SECONDS * (1.0 + float(severity))
+                                )
+                                cur.execute(
+                                    "UPDATE faction_relationships SET cooldown_until = ? WHERE source_faction_id = ? AND target_faction_id = ?",
+                                    (rel_cool, src, tgt),
+                                )
+                                conn.commit()
+                            except Exception:
+                                pass
+
+                        if action == "betray":
+                            # betrayal has stronger paranoia/drift effects and relationship damage
+                            try:
+                                cur.execute(
+                                    "SELECT strength FROM faction_relationships WHERE source_faction_id = ? AND target_faction_id = ?",
+                                    (src, tgt),
+                                )
+                                row = cur.fetchone()
+                                if row:
+                                    new_strength = float(row[0] or 0.0) - (
+                                        0.3 * (1.0 + float(severity))
+                                    )
+                                    cur.execute(
+                                        "UPDATE faction_relationships SET strength = ? WHERE source_faction_id = ? AND target_faction_id = ?",
+                                        (new_strength, src, tgt),
+                                    )
+                                else:
+                                    cur.execute(
+                                        "INSERT INTO faction_relationships (source_faction_id,target_faction_id,relationship_type,strength,cooldown_until) VALUES (?,?,?,?,?)",
+                                        (
+                                            src,
+                                            tgt,
+                                            "hostile",
+                                            -0.3 * (1.0 + float(severity)),
+                                            0,
+                                        ),
+                                    )
+                                conn.commit()
+                            except Exception:
+                                pass
+
+                        # If reversible requested, persist undo payload for this target (requires event id)
+                        try:
+                            reversible = bool(
+                                (event.get("metadata") or {}).get("reversible") or event.get("reversible")
+                            )
+                        except Exception:
+                            reversible = False
+                        try:
+                            if reversible and event.get("id"):
+                                import json, time
+
+                                # ensure table exists
+                                cur.execute(
+                                    "CREATE TABLE IF NOT EXISTS event_consequences (event_id TEXT PRIMARY KEY, reversible INTEGER, undo_payload TEXT, applied_ts INTEGER)"
+                                )
+                                cur.execute(
+                                    "INSERT OR REPLACE INTO event_consequences (event_id,reversible,undo_payload,applied_ts) VALUES (?,?,?,?)",
+                                    (
+                                        str(event.get("id")),
+                                        1,
+                                        json.dumps(undo),
+                                        int(time.time()),
+                                    ),
+                                )
+                                conn.commit()
                         except Exception:
                             pass
 

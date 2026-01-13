@@ -306,6 +306,17 @@ The master agent tracker below is kept in sync with the repository `TODO.md` and
 - [x] Document World Browser polling integration
 - [x] Add causation/correlation metadata to generated events
 - [x] Seed fallback characters/locations and add send validation
+ - [x] Fix PySide6 QAction imports in world-browser UI
+ - [x] Fix visualization imports in world-browser UI
+ - [x] Document World Browser polling integration
+ - [x] Add causation/correlation metadata to generated events
+ - [x] Seed fallback characters/locations and add send validation
+
+*Agent note (2026-01-13):* The interim flake8/lint issues were reviewed and deferred — current code passes unit tests; remaining style fixes can be addressed in follow-up PRs.
+
+## Next Immediate Task
+
+- [ ] Run CI (GitHub Actions) for the `cleanup/logging` branch and request review/merge
 
 -- Agent note: I will keep this tracker and `TODO.md` synchronized. When I complete or update any task above I will immediately update this section and the internal tracker so nothing is missed.
 

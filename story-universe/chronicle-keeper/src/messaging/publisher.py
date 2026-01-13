@@ -8,10 +8,9 @@ import json
 import time
 import logging
 import zmq
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional, Any, Callable
-from datetime import datetime
+from typing import Dict, Optional, Any
 from threading import Lock
 import threading
 import queue
@@ -291,7 +290,7 @@ class ZmqPub:
                                 self.metrics.messages_sent += 1
                                 self.metrics.last_success_time = time.time()
                                 sent = True
-                        except Exception as e:
+                        except Exception:
                             # fallback to _publish_impl to trigger reconnection handling
                             try:
                                 sent = self._publish_impl(topic, payload)
@@ -388,7 +387,8 @@ if __name__ == "__main__":
     import argparse
     import signal
     import sys
-    import json
+
+    # json already imported at module level
 
     def print_stats(publisher: TickPublisher):
         """Print current publisher statistics."""
@@ -462,7 +462,7 @@ if __name__ == "__main__":
 
         except KeyboardInterrupt:
             logger.info("Shutdown requested...")
-        except Exception as e:
+        except Exception:
             logger.exception("Unexpected error:")
         finally:
             print("\nFinal statistics:")

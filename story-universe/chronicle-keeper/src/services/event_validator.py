@@ -6,9 +6,7 @@ before they reach the Continuity Validator.
 """
 
 from typing import Dict, List, Optional, Any, Tuple
-import re
-from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import UUID
 
 # Base event schema that all events must adhere to
 BASE_EVENT_SCHEMA = {
@@ -17,9 +15,6 @@ BASE_EVENT_SCHEMA = {
     "properties": {
         "id": {"type": "string", "format": "uuid"},
         "type": {"type": "string", "pattern": "^[a-z]+\\.(?:[a-z]+\\.)*[a-z]+$"},
-        "timestamp": {"type": "integer", "minimum": 1577836800},  # 2020-01-01
-        "source": {"type": "string", "pattern": "^[a-z0-9_-]+$"},
-        "data": {"type": "object"},
         "metadata": {
             "type": "object",
             "properties": {

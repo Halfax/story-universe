@@ -5,14 +5,13 @@ This module provides middleware for validating events before they are processed 
 It integrates with the existing CanonicalEvent model and adds additional validation rules.
 """
 
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from typing import Callable, Awaitable, Dict, Any, Optional
+from typing import Callable, Awaitable, Any, Optional
 import json
 import logging
 from datetime import datetime
-from uuid import UUID, uuid4
-import re
+from uuid import uuid4
 
 from src.models.canonical_event import CanonicalEvent
 from src.services.event_validator import EventValidator
@@ -95,7 +94,7 @@ class EventValidationMiddleware:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"status": "error", "reason": "Invalid JSON payload"},
             )
-        except Exception as e:
+        except Exception:
             logger.exception("Unexpected error during event validation")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
