@@ -23,4 +23,6 @@ print(item.to_dict())
 ```
 
 Notes:
-- These helpers are intentionally small and keep data conversions explicit; the project also contains Pydantic-based shared_models for richer schemas where needed.
+- These helpers are intentionally small and keep data conversions explicit; the project also contains Pydantic-based `shared.models` for richer schemas where needed.
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).

@@ -1,0 +1,54 @@
+{
+  "cooldowns": {
+    "conflict": 1768322311.337322,
+    "explore": 1768323012.560778,
+    "alliance": 1768322674.7576,
+    "movement": 1768323002.5517786,
+    "mystery": 1768322990.560778,
+    "relationship": 1768323010.559777
+  },
+  "arcs": [
+    {
+      "id": "arc_1768317445_5935",
+      "arc": "conflict",
+      "characters": [
+        "char_mock_1",
+        "char_mock_3"
+      ],
+      "progress": 6,
+      "created_at": 1768317445
+    },
+    {
+      "id": "arc_1768317445_9957",
+      "arc": "explore",
+      "characters": [
+        "c1"
+      ],
+      "progress": 12,
+      "created_at": 1768317445
+    },
+    {
+      "id": "arc_1768317705_2349",
+      "arc": "mystery",
+      "characters": [
+        "char_mock_4"
+      ],
+      "progress": 2,
+      "created_at": 1768317705
+    }
+  ],
+  "last_event": {
+    "type": "mystery",
+    "involved_characters": [],
+    "involved_locations": [],
+    "involved_factions": [],
+    "description": "mystery involving ",
+    "metadata": {
+      "causationId": "evt_1768322955_8155",
+      "correlationId": "corr_1768322955_732"
+    },
+    "source": "narrative_engine",
+    "id": "evt_1768322955_1665",
+    "timestamp": 1768322955
+  }
+}

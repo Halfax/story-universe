@@ -85,21 +85,14 @@ Implementing
 ## Communication
 
 ### Between Components
-- **REST API**: For state queries and event submission
-- **WebSocket/ZeroMQ**: For real-time updates
-- **Message Queue**: For reliable event delivery
 
 ### Data Formats
-- **JSON**: For API payloads
-- **Protocol Buffers**: For high-performance messaging
-- **SQLite/DuckDB**: For persistent storage
 
 ## Scalability Considerations
 
 ### Horizontal Scaling
-- Stateless services can be scaled horizontally
-- Database sharding for large worlds
-- Caching layer for frequently accessed data
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
 
 ### Performance
 - Event batching for high throughput

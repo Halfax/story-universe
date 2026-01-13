@@ -1,0 +1,193 @@
+{
+  "$defs": {
+    "EquipSlot": {
+      "enum": [
+        "head",
+        "torso",
+        "legs",
+        "hands",
+        "feet",
+        "neck",
+        "ring",
+        "back"
+      ],
+      "title": "EquipSlot",
+      "type": "string"
+    },
+    "ItemCategory": {
+      "enum": [
+        "weapon",
+        "armor",
+        "consumable",
+        "wearable",
+        "misc"
+      ],
+      "title": "ItemCategory",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Id"
+    },
+    "sku": {
+      "title": "Sku",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": "",
+      "title": "Description"
+    },
+    "category": {
+      "$ref": "#/$defs/ItemCategory",
+      "default": "misc"
+    },
+    "sub_type": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sub Type"
+    },
+    "weight": {
+      "default": 0.0,
+      "title": "Weight",
+      "type": "number"
+    },
+    "stackable": {
+      "default": false,
+      "title": "Stackable",
+      "type": "boolean"
+    },
+    "max_stack": {
+      "default": 1,
+      "title": "Max Stack",
+      "type": "integer"
+    },
+    "equippable": {
+      "default": false,
+      "title": "Equippable",
+      "type": "boolean"
+    },
+    "equip_slot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EquipSlot"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "damage_min": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Damage Min"
+    },
+    "damage_max": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Damage Max"
+    },
+    "armor_rating": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Armor Rating"
+    },
+    "durability_max": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Durability Max"
+    },
+    "consumable": {
+      "default": false,
+      "title": "Consumable",
+      "type": "boolean"
+    },
+    "charges_max": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Charges Max"
+    },
+    "effects": {
+      "additionalProperties": true,
+      "title": "Effects",
+      "type": "object"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "sku",
+    "name"
+  ],
+  "title": "ItemSchema",
+  "type": "object"
+}

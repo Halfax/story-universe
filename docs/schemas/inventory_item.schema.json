@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "EquipSlot": {
+      "enum": [
+        "head",
+        "torso",
+        "legs",
+        "hands",
+        "feet",
+        "neck",
+        "ring",
+        "back"
+      ],
+      "title": "EquipSlot",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "id": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Id"
+    },
+    "owner_type": {
+      "title": "Owner Type",
+      "type": "string"
+    },
+    "owner_id": {
+      "title": "Owner Id",
+      "type": "string"
+    },
+    "item_id": {
+      "title": "Item Id",
+      "type": "integer"
+    },
+    "quantity": {
+      "default": 1,
+      "title": "Quantity",
+      "type": "integer"
+    },
+    "durability": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Durability"
+    },
+    "charges_remaining": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Charges Remaining"
+    },
+    "equipped": {
+      "default": false,
+      "title": "Equipped",
+      "type": "boolean"
+    },
+    "equip_slot": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/EquipSlot"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "owner_type",
+    "owner_id",
+    "item_id"
+  ],
+  "title": "InventoryItemSchema",
+  "type": "object"
+}

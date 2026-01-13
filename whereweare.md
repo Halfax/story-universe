@@ -98,12 +98,15 @@ Add checks for:
 
 🟦 4. Event Types + Canonical Models implemented:
 	- Canonical event types and a Pydantic CanonicalEvent model are now defined in shared/models/event_types.py.
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
 	- Ready for structured event validation and generation by Evo‑X2.
 
 
 🟥 5. Messaging Integration started:
-	- ZeroMQ tick publisher stub implemented in messaging/publisher.py.
-	- Ready to broadcast ticks and events to Evo‑X2 and other nodes.
+ 	- ZeroMQ tick publisher implemented in messaging/publisher.py.
+ 	- Ready to broadcast ticks and events to Evo‑X2 and other nodes.
+ 	- Reliability: automatic reconnect, bounded send queue, configurable dead-letter file, backpressure warnings, queue-latency monitoring, and simple tick batching (see messaging/publisher.py).
 Add:
 - ZeroMQ or MQTT publisher for ticks
 - Subscriber for Evo‑X2 responses

@@ -69,6 +69,8 @@ Next steps for implementation
 
 Implementation status (updates)
 - Created `chronicle-keeper/src/db/schema.sql` additions for `items` and `inventory`.
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
 - Added `shared/models/item.py` (dataclasses + helpers).
 - Created package files `shared/__init__.py` and `shared/models/__init__.py` so models can be imported as `shared.models.item`.
 

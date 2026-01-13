@@ -8,39 +8,42 @@
   - [x] Implement event validation
   - [x] Add event handlers and middleware
   - [x] Document event types and schemas
+  - [x] Event System Integration: middleware hooks, idempotency, replay, tick-batching (implemented)
+    - Files: `src/services/event_handlers.py`, `src/services/event_consumer.py`, `src/main.py`
 
-- [ ] **Shared Models**
+ - [x] **Shared Models**
   - [x] Base Model and Event classes
   - [x] Character model with validation
   - [x] Location model with coordinates
   - [x] Item and Inventory system
   - [x] Model serialization/deserialization
-  - [ ] Unit tests for all models
+  - [x] Unit tests for all models
 
 - [ ] **Validation System**
   - [x] Core validation framework
   - [x] Common validators (Range, Length, Regex, etc.)
   - [x] Conditional and composite validators
   - [x] Documentation and examples
-  - [ ] Performance optimization
+  - [x] Performance optimization: basic caching and arc/cross-entity checks implemented
 
 ### Medium Priority
 - [ ] **Tick Publisher**
   - [x] Basic implementation
-  - [ ] Error recovery
-  - [ ] Backpressure handling
+  - [x] Error recovery
+  - [x] Backpressure handling
   - [ ] Performance testing
 
 - [ ] **Continuity Validator**
-  - [ ] Define validation rules
-  - [ ] Implement timeline checks
-  - [ ] Add narrative constraints
-  - [ ] Performance optimization
+  - [x] Define validation rules
+  - [x] Implement timeline checks
+  - [x] Add narrative constraints
+  - [x] Performance optimization
 
 - [ ] **Narrative Engine**
+ - [ ] **Narrative Engine**
   - [ ] Redesign architecture
   - [ ] Implement event processing
-  - [ ] Add story arc management
+  - [x] Add story arc management
   - [ ] Improve character AI
 
 ## Infrastructure
@@ -138,21 +141,144 @@
 3. Set up CI/CD pipeline
 4. Improve test coverage
 
+## Priority‑Ordered TODO (Critical Path First)
+
+This section consolidates the priority-ordered plan (critical path first).
+
+### Tier 0 — System Stability Prerequisites
+These unblock everything else. They’re foundational.
+1. **Event System Integration (Highest Priority)**
+  - Complete all event handlers
+  - Ensure every schema has a handler
+  - Wire middleware hooks (pre-validate, post-apply)
+  - Add event replay + idempotency
+  - Add event batching for ticks
+  - Why: every other subsystem depends on events flowing cleanly and deterministically.
+
+2. **Validation System Hardening**
+  - Add missing continuity rules (expanded recent_events metadata, causation timestamp ordering)
+  - Add timeline consistency checks (causation/time ordering)
+  - Add persona/arc constraints (basic arc contradiction checks)
+  - Add cross-entity validation (characters/factions/locations existence checks)
+  - Add caching + performance improvements (validator-level state cache TTL)
+  - Why: bad events corrupt world-state. Fixing this early prevents cascading failures.
+
+3. **Continuity Engine (apply_event_consequences)** — Completed (2026-01-13)
+  - Persona-aware scaling
+  - Faction-aware scaling
+  - Multi-target consequences
+  - Reversible consequences
+  - Stability/severity sanity checks
+  - Why: narrative engine depends on predictable, correct consequences.
+  - Notes: Implemented in `src/services/continuity.py`; schema/table `event_consequences` added to `src/db/schema.sql` and `src/db/init_db.py`. Documented in `docs/EVENT_CONSEQUENCES.md` and `CHANGES.md`.
+
+### Tier 1 — Core Simulation Loop Reliability
+4. **Tick Publisher Reliability**
+  - [x] Retry logic
+  - [x] Dead-letter queue
+  - [x] Backpressure detection
+  - [x] Tick-lag monitoring
+  - [x] Tick batching
+
+5. **Shared Models (Items, Inventory, Characters, Factions)**
+  - Add missing fields
+  - Add schema validation
+  - Add character/faction state deltas
+  - Add inventory mutation rules
+
+### Tier 2 — Narrative Intelligence & Story Coherence
+6. **Narrative Engine Redesign**
+  - Split generator into selector/persona/state/arc layers
+  - Add story-arc persistence
+  - Add character/faction narrative goals
+  - Add long-term arc planning
+  - Add memory of past events
+  - Add conflict/alliance arc logic
+
+7. **Continuity Validator (Advanced Rules)**
+  - Arc-safe transitions
+  - Persona-safe transitions
+  - Multi-event timeline validation
+  - Performance tuning
+
+### Tier 3 — Infrastructure & Tooling
+8. **CI/CD + Automated Testing**
+  - GitHub Actions pipeline
+  - Linting + type checks
+  - Unit tests
+  - Integration tests
+  - Coverage
+  - Docker build pipeline
+
+9. **Docker & Deployment**
+  - Multi-stage builds
+  - Slim runtime images
+  - Health checks
+  - Config injection
+
+### Tier 4 — Frontend & API Layer
+10. **World Browser / Frontend**
+  - GET /world (full + delta)
+  - POST /event
+  - Delta polling
+  - WebSocket live updates
+  - Timeline viewer
+  - Character/faction dashboards
+  - World diff viewer
+
+### Tier 5 — Documentation & Security
+11. **Documentation**
+  - API reference
+  - Deployment guide
+  - Architecture overview
+  - Narrative engine doc
+  - Testing strategy
+  - Security model
+
+12. **Security Hardening**
+  - API keys
+  - RBAC
+  - Rate limiting
+  - Request signing
+  - Encryption at rest
+  - Audit logging
+  - Tamper-evident logs
+
+### Tier 6 — High-Impact Enhancements (Optional)
+13. **Simulation Enhancements**
+  - World-state compression
+  - Snapshot diffing
+  - Persona drift modeling
+  - Faction ideology modeling
+  - Emergent diplomacy
+  - Global tension index
+
+14. **Procedural Item Ecosystem Expansion**
+  - Hybrid items
+  - Rarity tiers
+  - Procedural traits
+  - Faction-specific gear pools
+
+_These enrich the world but don’t block core functionality._
+
 ### Help Wanted
 - [ ] Implement event handlers
 - [ ] Add model serialization tests
 - [ ] Write API documentation
 - [ ] Create deployment guides
 
----
 
-*Last Updated: 2026-01-12*
+*Last Updated: 2026-01-13*
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md) for details.
 
 ## Agent Tracker Snapshot (2026-01-12)
 
 The agent's internal tracker (live):
 
 - [x] Fix `apply_event_consequences` to use `severity`/`stability` (completed)
+- [x] Merge priority-ordered plan into `TODO.md` (completed)
+- [x] Implement Event System Integration (middleware/idempotency/replay/batch) (completed)
 - [ ] Defer running chronicle-keeper tests (user requested)
 - [ ] Add unit tests for consequence-scaling (trust/relationships/personality)
 - [ ] Make background services test-friendly (config/env to shorten sleeps)
@@ -163,11 +289,11 @@ This snapshot reflects the agent-run task tracker and is provided for visibility
 
 The master agent tracker below is kept in sync with the repository `TODO.md` and the assistant's internal tracker. Items the agent marked as completed are noted.
 
-- [ ] Implement event validation
-- [ ] Finish shared models
+- [x] Implement event validation
+ - [x] Finish shared models
 - [ ] Add inventory system
 - [ ] Expand continuity validator
-- [ ] Add tick publisher recovery
+ - [x] Add tick publisher recovery
 - [ ] Narrative engine redesign
 - [ ] Persist story arcs
 - [ ] Set up CI/CD pipeline
@@ -184,6 +310,20 @@ The master agent tracker below is kept in sync with the repository `TODO.md` and
 - [x] Document World Browser polling integration
 - [x] Add causation/correlation metadata to generated events
 - [x] Seed fallback characters/locations and add send validation
+ - [x] Fix PySide6 QAction imports in world-browser UI
+ - [x] Fix visualization imports in world-browser UI
+ - [x] Document World Browser polling integration
+ - [x] Add causation/correlation metadata to generated events
+ - [x] Seed fallback characters/locations and add send validation
+
+*Agent note (2026-01-13):* The interim flake8/lint issues were reviewed and deferred — current code passes unit tests; remaining style fixes can be addressed in follow-up PRs.
+
+## Next Immediate Task
+
+- [ ] Run CI (GitHub Actions) for the `cleanup/logging` branch and request review/merge
+
+ - [ ] Move environment variable configs into `src/config.py` and replace all `os.getenv` lookups in code with imports from `config.py` (publisher, other modules)
+ - [x] Move environment variable configs into `src/config.py` and replace all `os.getenv` lookups in code with imports from `config.py` (publisher, other modules)
 
 -- Agent note: I will keep this tracker and `TODO.md` synchronized. When I complete or update any task above I will immediately update this section and the internal tracker so nothing is missed.
 

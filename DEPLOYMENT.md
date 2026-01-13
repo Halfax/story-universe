@@ -41,7 +41,7 @@ This is a persistent, distributed narrative simulation system. Each machine has 
 1. **Clone the repository:**
    ```sh
    git clone <your-repo-url>
-   cd story-universe/chronicle-keeper
+   cd chronicle-keeper
    ```
 2. **Install dependencies (if not using Docker):**
    ```sh
@@ -64,7 +64,7 @@ This is a persistent, distributed narrative simulation system. Each machine has 
 6. **Run tests:**
    ```sh
    cd ../../
-   narrative-engine/venv/Scripts/python -m pytest story-universe/chronicle-keeper/tests
+   narrative-engine/venv/Scripts/python -m pytest chronicle-keeper/tests
    ```
 
 #### Manual (non-Docker) run:
@@ -95,7 +95,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 8001
 1. **Clone the repository:**
    ```sh
    git clone <your-repo-url>
-   cd story-universe/narrative-engine
+   cd narrative-engine
    ```
 2. **Set up Python environment:**
    ```sh
@@ -128,7 +128,7 @@ uvicorn src.main:app --host 0.0.0.0 --port 8001
 1. **Clone the repository:**
    ```sh
    git clone <your-repo-url>
-   cd story-universe/world-browser
+   cd world-browser
    ```
 2. **Set up Python environment:**
    ```sh
@@ -170,3 +170,5 @@ If you prefer `systemd` over `cron.d` for auto-start, create a unit file and ena
 ## Support & Contact
 - See AGENTS.md for architecture and conventions
 - For issues, open a GitHub issue or contact the maintainer
+
+Note: The repository layout was flattened on 2026-01-13. See [docs/REPO_LAYOUT_CHANGE.md](docs/REPO_LAYOUT_CHANGE.md).
